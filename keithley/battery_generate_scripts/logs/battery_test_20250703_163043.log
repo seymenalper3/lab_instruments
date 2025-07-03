@@ -1,0 +1,83 @@
+2025-07-03 16:30:43,701 - INFO - Available resources: ('ASRL/dev/ttyS0::INSTR', 'ASRL/dev/ttyS1::INSTR', 'ASRL/dev/ttyS2::INSTR', 'ASRL/dev/ttyS3::INSTR', 'ASRL/dev/ttyS4::INSTR', 'ASRL/dev/ttyS5::INSTR', 'ASRL/dev/ttyS6::INSTR', 'ASRL/dev/ttyS7::INSTR', 'ASRL/dev/ttyS8::INSTR', 'ASRL/dev/ttyS9::INSTR', 'ASRL/dev/ttyS10::INSTR', 'ASRL/dev/ttyS11::INSTR', 'ASRL/dev/ttyS12::INSTR', 'ASRL/dev/ttyS13::INSTR', 'ASRL/dev/ttyS14::INSTR', 'ASRL/dev/ttyS15::INSTR', 'ASRL/dev/ttyS16::INSTR', 'ASRL/dev/ttyS17::INSTR', 'ASRL/dev/ttyS18::INSTR', 'ASRL/dev/ttyS19::INSTR', 'ASRL/dev/ttyS20::INSTR', 'ASRL/dev/ttyS21::INSTR', 'ASRL/dev/ttyS22::INSTR', 'ASRL/dev/ttyS23::INSTR', 'ASRL/dev/ttyS24::INSTR', 'ASRL/dev/ttyS25::INSTR', 'ASRL/dev/ttyS26::INSTR', 'ASRL/dev/ttyS27::INSTR', 'ASRL/dev/ttyS28::INSTR', 'ASRL/dev/ttyS29::INSTR', 'ASRL/dev/ttyS30::INSTR', 'ASRL/dev/ttyS31::INSTR', 'USB0::1510::8833::4587429::0::INSTR')
+2025-07-03 16:30:44,054 - INFO - Connected to: KEITHLEY INSTRUMENTS,MODEL 2281S-20-6,4587429,01.08b
+2025-07-03 16:30:44,056 - INFO - === STARTING BATTERY DISCHARGE ===
+2025-07-03 16:30:44,104 - INFO - Waiting for discharge to start...
+2025-07-03 16:30:49,105 - INFO - Waiting for measurement (max 0.5 hours)...
+2025-07-03 16:30:51,115 - INFO - Progress: 0.0 min | V: 3.449V | I: -1.069A | Measuring: False
+2025-07-03 16:30:51,115 - INFO - Measurement completed in 0.0 minutes
+2025-07-03 16:30:51,115 - INFO - === DISCHARGE COMPLETED ===
+2025-07-03 16:30:51,115 - INFO - === STARTING CHARGE & CHARACTERIZATION ===
+2025-07-03 16:30:51,133 - INFO - Waiting for charge to start...
+2025-07-03 16:30:56,133 - INFO - Waiting for measurement (max 1 hours)...
+2025-07-03 16:30:58,142 - INFO - Progress: 0.0 min | V: 3.449V | I: -1.069A | Measuring: True
+2025-07-03 16:31:08,155 - INFO - Progress: 0.2 min | V: 3.449V | I: -1.069A | Measuring: True
+2025-07-03 16:31:18,164 - INFO - Progress: 0.4 min | V: 3.449V | I: -1.069A | Measuring: True
+2025-07-03 16:31:28,173 - INFO - Progress: 0.5 min | V: 3.449V | I: -1.069A | Measuring: True
+2025-07-03 16:31:38,183 - INFO - Progress: 0.7 min | V: 3.449V | I: -1.069A | Measuring: True
+2025-07-03 16:31:48,195 - INFO - Progress: 0.9 min | V: 3.449V | I: -1.069A | Measuring: True
+2025-07-03 16:31:58,203 - INFO - Progress: 1.0 min | V: 3.449V | I: -1.069A | Measuring: True
+2025-07-03 16:32:08,214 - INFO - Progress: 1.2 min | V: 3.449V | I: -1.069A | Measuring: True
+2025-07-03 16:32:18,223 - INFO - Progress: 1.4 min | V: 3.449V | I: -1.069A | Measuring: True
+2025-07-03 16:32:28,234 - INFO - Progress: 1.5 min | V: 3.449V | I: -1.069A | Measuring: True
+2025-07-03 16:32:38,243 - INFO - Progress: 1.7 min | V: 3.875V | I: 1.000A | Measuring: True
+2025-07-03 16:32:48,255 - INFO - Progress: 1.9 min | V: 3.875V | I: 1.000A | Measuring: True
+2025-07-03 16:32:58,265 - INFO - Progress: 2.0 min | V: 3.875V | I: 1.000A | Measuring: True
+2025-07-03 16:33:08,274 - INFO - Progress: 2.2 min | V: 3.875V | I: 1.000A | Measuring: True
+2025-07-03 16:33:18,284 - INFO - Progress: 2.4 min | V: 3.875V | I: 1.000A | Measuring: True
+2025-07-03 16:33:28,294 - INFO - Progress: 2.5 min | V: 3.875V | I: 1.000A | Measuring: True
+2025-07-03 16:33:38,303 - INFO - Progress: 2.7 min | V: 3.875V | I: 1.000A | Measuring: True
+2025-07-03 16:33:48,318 - INFO - Progress: 2.9 min | V: 3.875V | I: 1.000A | Measuring: True
+2025-07-03 16:33:58,327 - INFO - Progress: 3.0 min | V: 3.875V | I: 1.000A | Measuring: True
+2025-07-03 16:34:08,338 - INFO - Progress: 3.2 min | V: 3.875V | I: 1.000A | Measuring: True
+2025-07-03 16:34:18,349 - INFO - Progress: 3.4 min | V: 3.875V | I: 1.000A | Measuring: True
+2025-07-03 16:34:28,358 - INFO - Progress: 3.5 min | V: 3.887V | I: 1.000A | Measuring: True
+2025-07-03 16:34:38,368 - INFO - Progress: 3.7 min | V: 3.887V | I: 1.000A | Measuring: True
+2025-07-03 16:34:48,378 - INFO - Progress: 3.9 min | V: 3.887V | I: 1.000A | Measuring: True
+2025-07-03 16:34:58,389 - INFO - Progress: 4.0 min | V: 3.887V | I: 1.000A | Measuring: True
+2025-07-03 16:35:08,398 - INFO - Progress: 4.2 min | V: 3.887V | I: 1.000A | Measuring: True
+2025-07-03 16:35:18,408 - INFO - Progress: 4.4 min | V: 3.887V | I: 1.000A | Measuring: True
+2025-07-03 16:35:28,419 - INFO - Progress: 4.5 min | V: 3.887V | I: 1.000A | Measuring: True
+2025-07-03 16:35:38,428 - INFO - Progress: 4.7 min | V: 3.887V | I: 1.000A | Measuring: True
+2025-07-03 16:35:48,438 - INFO - Progress: 4.9 min | V: 3.887V | I: 1.000A | Measuring: True
+2025-07-03 16:35:58,448 - INFO - Progress: 5.0 min | V: 3.887V | I: 1.000A | Measuring: True
+2025-07-03 16:36:08,456 - INFO - Progress: 5.2 min | V: 3.895V | I: 1.000A | Measuring: True
+2025-07-03 16:36:18,465 - INFO - Progress: 5.4 min | V: 3.895V | I: 1.000A | Measuring: True
+2025-07-03 16:36:28,474 - INFO - Progress: 5.5 min | V: 3.895V | I: 1.000A | Measuring: True
+2025-07-03 16:36:38,483 - INFO - Progress: 5.7 min | V: 3.895V | I: 1.000A | Measuring: True
+2025-07-03 16:36:48,491 - INFO - Progress: 5.9 min | V: 3.895V | I: 1.000A | Measuring: True
+2025-07-03 16:36:58,502 - INFO - Progress: 6.0 min | V: 3.895V | I: 1.000A | Measuring: True
+2025-07-03 16:37:08,514 - INFO - Progress: 6.2 min | V: 3.895V | I: 1.000A | Measuring: True
+2025-07-03 16:37:18,522 - INFO - Progress: 6.4 min | V: 3.895V | I: 1.000A | Measuring: True
+2025-07-03 16:37:28,532 - INFO - Progress: 6.5 min | V: 3.895V | I: 1.000A | Measuring: True
+2025-07-03 16:37:38,541 - INFO - Progress: 6.7 min | V: 3.895V | I: 1.000A | Measuring: True
+2025-07-03 16:37:48,550 - INFO - Progress: 6.9 min | V: 3.895V | I: 1.000A | Measuring: True
+2025-07-03 16:37:58,559 - INFO - Progress: 7.0 min | V: 3.903V | I: 1.000A | Measuring: True
+2025-07-03 16:38:08,570 - INFO - Progress: 7.2 min | V: 3.903V | I: 1.000A | Measuring: True
+2025-07-03 16:38:18,579 - INFO - Progress: 7.4 min | V: 3.903V | I: 1.000A | Measuring: True
+2025-07-03 16:38:28,589 - INFO - Progress: 7.5 min | V: 3.903V | I: 1.000A | Measuring: True
+2025-07-03 16:38:38,600 - INFO - Progress: 7.7 min | V: 3.903V | I: 1.000A | Measuring: True
+2025-07-03 16:38:48,609 - INFO - Progress: 7.9 min | V: 3.903V | I: 1.000A | Measuring: True
+2025-07-03 16:38:58,618 - INFO - Progress: 8.0 min | V: 3.903V | I: 1.000A | Measuring: True
+2025-07-03 16:39:08,628 - INFO - Progress: 8.2 min | V: 3.903V | I: 1.000A | Measuring: True
+2025-07-03 16:39:18,637 - INFO - Progress: 8.4 min | V: 3.903V | I: 1.000A | Measuring: True
+2025-07-03 16:39:28,648 - INFO - Progress: 8.5 min | V: 3.903V | I: 1.000A | Measuring: True
+2025-07-03 16:39:38,657 - INFO - Progress: 8.7 min | V: 3.911V | I: 1.000A | Measuring: True
+2025-07-03 16:39:48,666 - INFO - Progress: 8.9 min | V: 3.911V | I: 1.000A | Measuring: True
+2025-07-03 16:39:58,677 - INFO - Progress: 9.0 min | V: 3.911V | I: 1.000A | Measuring: True
+2025-07-03 16:40:08,687 - INFO - Progress: 9.2 min | V: 3.911V | I: 1.000A | Measuring: True
+2025-07-03 16:40:18,696 - INFO - Progress: 9.4 min | V: 3.911V | I: 1.000A | Measuring: True
+2025-07-03 16:40:28,705 - INFO - Progress: 9.5 min | V: 3.911V | I: 1.000A | Measuring: True
+2025-07-03 16:40:38,716 - INFO - Progress: 9.7 min | V: 3.911V | I: 1.000A | Measuring: True
+2025-07-03 16:40:48,725 - INFO - Progress: 9.9 min | V: 3.911V | I: 1.000A | Measuring: True
+2025-07-03 16:40:58,736 - INFO - Progress: 10.0 min | V: 3.911V | I: 1.000A | Measuring: True
+2025-07-03 16:41:08,745 - INFO - Progress: 10.2 min | V: 3.911V | I: 1.000A | Measuring: True
+2025-07-03 16:41:18,755 - INFO - Progress: 10.4 min | V: 3.919V | I: 1.000A | Measuring: True
+2025-07-03 16:41:28,764 - INFO - Progress: 10.5 min | V: 3.919V | I: 1.000A | Measuring: True
+2025-07-03 16:41:38,774 - INFO - Progress: 10.7 min | V: 3.919V | I: 1.000A | Measuring: True
+2025-07-03 16:41:48,784 - INFO - Progress: 10.9 min | V: 3.919V | I: 1.000A | Measuring: True
+2025-07-03 16:41:58,794 - INFO - Progress: 11.0 min | V: 3.919V | I: 1.000A | Measuring: True
+2025-07-03 16:42:08,805 - INFO - Progress: 11.2 min | V: 3.919V | I: 1.000A | Measuring: True
+2025-07-03 16:42:18,814 - INFO - Progress: 11.4 min | V: 3.919V | I: 1.000A | Measuring: True
+2025-07-03 16:42:28,823 - INFO - Progress: 11.5 min | V: 3.919V | I: 1.000A | Measuring: True
+2025-07-03 16:42:38,833 - INFO - Progress: 11.7 min | V: 3.919V | I: 1.000A | Measuring: True
+2025-07-03 16:42:48,843 - INFO - Progress: 11.9 min | V: 3.919V | I: 1.000A | Measuring: True

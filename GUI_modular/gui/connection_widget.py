@@ -149,27 +149,62 @@ class ConnectionWidget:
             # Create selection dialog
             dialog = tk.Toplevel(self.parent)
             dialog.title("Select VISA Resource")
-            dialog.geometry("400x200")
+            dialog.geometry("500x300")
             dialog.transient(self.parent)
             dialog.grab_set()
             
             ttk.Label(dialog, text="Available Resources:").pack(pady=5)
             
-            listbox = tk.Listbox(dialog)
-            listbox.pack(fill='both', expand=True, padx=10, pady=5)
+            listbox = tk.Listbox(dialog, height=8)
+            listbox.pack(fill='both', expand=False, padx=10, pady=5)
             
             for resource in resources:
                 listbox.insert(tk.END, resource)
-                
-            def select_resource():
+            
+            # Button frame - pack at bottom first
+            button_frame = ttk.Frame(dialog)
+            button_frame.pack(side='bottom', fill='x', padx=10, pady=10)
+            
+            # Selected resource display - pack at bottom before buttons
+            selected_frame = ttk.Frame(dialog)
+            selected_frame.pack(side='bottom', fill='x', padx=10, pady=5)
+            
+            ttk.Label(selected_frame, text="Selected:").pack(side='left')
+            selected_var = tk.StringVar(value="None")
+            selected_label = ttk.Label(selected_frame, textvariable=selected_var, foreground="blue")
+            selected_label.pack(side='left', padx=(5,0))
+            
+            def on_listbox_select(event):
+                selection = listbox.curselection()
+                if selection:
+                    selected = listbox.get(selection[0])
+                    selected_var.set(selected)
+                else:
+                    selected_var.set("None")
+            
+            listbox.bind('<<ListboxSelect>>', on_listbox_select)
+            
+            def confirm_selection():
                 selection = listbox.curselection()
                 if selection:
                     selected = listbox.get(selection[0])
                     self.resource_entry.delete(0, tk.END)
                     self.resource_entry.insert(0, selected)
                     dialog.destroy()
+                    # Focus back to parent window and update resource entry
+                    self.parent.focus_set()
+                    self.resource_entry.focus_set()
+                else:
+                    messagebox.showwarning("Warning", "Please select a resource first")
+            
+            def cancel_selection():
+                dialog.destroy()
                     
-            ttk.Button(dialog, text="Select", command=select_resource).pack(pady=5)
+            confirm_btn = ttk.Button(button_frame, text="Confirm", command=confirm_selection)
+            confirm_btn.pack(side='left', padx=10, pady=5)
+            
+            cancel_btn = ttk.Button(button_frame, text="Cancel", command=cancel_selection)
+            cancel_btn.pack(side='left', padx=10, pady=5)
             
         except Exception as e:
             messagebox.showerror("Error", f"Failed to detect resources: {e}")

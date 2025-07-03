@@ -1,0 +1,30 @@
+2025-07-03 13:53:21,731 - ERROR - Unknown attribute 1073676342 (0x3fff0036 - VI_ATTR_SUPPRESS_END_EN)
+Traceback (most recent call last):
+  File "/usr/lib/python3/dist-packages/pyvisa_py/sessions.py", line 669, in get_attribute
+    return self._get_attribute(attribute)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/pyvisa_py/usb.py", line 207, in _get_attribute
+    raise UnknownAttribute(attribute)
+pyvisa_py.sessions.UnknownAttribute: Unknown attribute 1073676342 (0x3fff0036 - VI_ATTR_SUPPRESS_END_EN)
+2025-07-03 13:53:21,733 - INFO - Connected to: KEITHLEY INSTRUMENTS,MODEL 2281S-20-6,4587429,01.08b
+2025-07-03 13:53:21,735 - INFO - === STARTING BATTERY DISCHARGE ===
+2025-07-03 13:53:21,770 - INFO - Waiting for measurement (max 4 hours)...
+2025-07-03 13:53:21,772 - ERROR - Unknown attribute 1073676342 (0x3fff0036 - VI_ATTR_SUPPRESS_END_EN)
+Traceback (most recent call last):
+  File "/usr/lib/python3/dist-packages/pyvisa_py/sessions.py", line 669, in get_attribute
+    return self._get_attribute(attribute)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/pyvisa_py/usb.py", line 207, in _get_attribute
+    raise UnknownAttribute(attribute)
+pyvisa_py.sessions.UnknownAttribute: Unknown attribute 1073676342 (0x3fff0036 - VI_ATTR_SUPPRESS_END_EN)
+2025-07-03 13:53:21,799 - ERROR - Unknown attribute 1073676342 (0x3fff0036 - VI_ATTR_SUPPRESS_END_EN)
+Traceback (most recent call last):
+  File "/usr/lib/python3/dist-packages/pyvisa_py/sessions.py", line 669, in get_attribute
+    return self._get_attribute(attribute)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/pyvisa_py/usb.py", line 207, in _get_attribute
+    raise UnknownAttribute(attribute)
+pyvisa_py.sessions.UnknownAttribute: Unknown attribute 1073676342 (0x3fff0036 - VI_ATTR_SUPPRESS_END_EN)
+2025-07-03 13:53:27,806 - ERROR - Failed to get status: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-03 13:53:27,806 - ERROR - Test failed: Failed to get measurement status
+2025-07-03 13:53:27,811 - INFO - Cleanup completed

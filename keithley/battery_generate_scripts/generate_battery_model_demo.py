@@ -45,11 +45,11 @@ try:
 
     # 4) Otomatik durdurma
     print("Demo ölçüm için 15 s bekleniyor…")
-    time.sleep(15)
+    time.sleep(60)
     w(inst, ':BATT:TEST:SENS:AH:EXEC STOP')
 
     # 5) Model aralığı ve kaydetme
-    w(inst, ':BATT:TEST:SENS:AH:GMOD:RANG 3.5,4.20')
+    w(inst, ':BATT:TEST:SENS:AH:GMOD:RANG 3.5,4.10')
     w(inst, f':BATT:TEST:SENS:AH:GMOD:SAVE:INTernal {slot}')
     q(inst, '*OPC?')
 

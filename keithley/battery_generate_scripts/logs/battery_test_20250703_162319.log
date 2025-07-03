@@ -1,0 +1,47 @@
+2025-07-03 16:23:19,394 - INFO - Available resources: ('ASRL/dev/ttyS0::INSTR', 'ASRL/dev/ttyS1::INSTR', 'ASRL/dev/ttyS2::INSTR', 'ASRL/dev/ttyS3::INSTR', 'ASRL/dev/ttyS4::INSTR', 'ASRL/dev/ttyS5::INSTR', 'ASRL/dev/ttyS6::INSTR', 'ASRL/dev/ttyS7::INSTR', 'ASRL/dev/ttyS8::INSTR', 'ASRL/dev/ttyS9::INSTR', 'ASRL/dev/ttyS10::INSTR', 'ASRL/dev/ttyS11::INSTR', 'ASRL/dev/ttyS12::INSTR', 'ASRL/dev/ttyS13::INSTR', 'ASRL/dev/ttyS14::INSTR', 'ASRL/dev/ttyS15::INSTR', 'ASRL/dev/ttyS16::INSTR', 'ASRL/dev/ttyS17::INSTR', 'ASRL/dev/ttyS18::INSTR', 'ASRL/dev/ttyS19::INSTR', 'ASRL/dev/ttyS20::INSTR', 'ASRL/dev/ttyS21::INSTR', 'ASRL/dev/ttyS22::INSTR', 'ASRL/dev/ttyS23::INSTR', 'ASRL/dev/ttyS24::INSTR', 'ASRL/dev/ttyS25::INSTR', 'ASRL/dev/ttyS26::INSTR', 'ASRL/dev/ttyS27::INSTR', 'ASRL/dev/ttyS28::INSTR', 'ASRL/dev/ttyS29::INSTR', 'ASRL/dev/ttyS30::INSTR', 'ASRL/dev/ttyS31::INSTR', 'USB0::1510::8833::4587429::0::INSTR')
+2025-07-03 16:23:19,747 - INFO - Connected to: KEITHLEY INSTRUMENTS,MODEL 2281S-20-6,4587429,01.08b
+2025-07-03 16:23:19,749 - INFO - === STARTING BATTERY DISCHARGE ===
+2025-07-03 16:23:19,780 - INFO - Waiting for discharge to start...
+2025-07-03 16:23:24,781 - INFO - Waiting for measurement (max 0.5 hours)...
+2025-07-03 16:23:26,791 - INFO - Progress: 0.0 min | V: 3.500V | I: -0.932A | Measuring: True
+2025-07-03 16:23:36,800 - INFO - Progress: 0.2 min | V: 3.500V | I: -0.932A | Measuring: True
+2025-07-03 16:23:46,812 - INFO - Progress: 0.4 min | V: 3.500V | I: -0.932A | Measuring: True
+2025-07-03 16:23:56,821 - INFO - Progress: 0.5 min | V: 3.500V | I: -0.932A | Measuring: True
+2025-07-03 16:24:06,833 - INFO - Progress: 0.7 min | V: 3.500V | I: -0.932A | Measuring: True
+2025-07-03 16:24:16,842 - INFO - Progress: 0.9 min | V: 3.500V | I: -0.932A | Measuring: True
+2025-07-03 16:24:26,853 - INFO - Progress: 1.0 min | V: 3.500V | I: -0.932A | Measuring: True
+2025-07-03 16:24:36,865 - INFO - Progress: 1.2 min | V: 3.500V | I: -0.932A | Measuring: True
+2025-07-03 16:24:46,874 - INFO - Progress: 1.4 min | V: 3.500V | I: -0.932A | Measuring: True
+2025-07-03 16:24:56,883 - INFO - Progress: 1.5 min | V: 3.500V | I: -0.932A | Measuring: True
+2025-07-03 16:25:06,892 - INFO - Progress: 1.7 min | V: 3.500V | I: -0.765A | Measuring: True
+2025-07-03 16:25:16,901 - INFO - Progress: 1.9 min | V: 3.500V | I: -0.765A | Measuring: True
+2025-07-03 16:25:26,910 - INFO - Progress: 2.0 min | V: 3.500V | I: -0.765A | Measuring: True
+2025-07-03 16:25:36,920 - INFO - Progress: 2.2 min | V: 3.500V | I: -0.765A | Measuring: True
+2025-07-03 16:25:46,929 - INFO - Progress: 2.4 min | V: 3.500V | I: -0.765A | Measuring: True
+2025-07-03 16:25:56,940 - INFO - Progress: 2.5 min | V: 3.500V | I: -0.765A | Measuring: True
+2025-07-03 16:26:06,950 - INFO - Progress: 2.7 min | V: 3.500V | I: -0.765A | Measuring: True
+2025-07-03 16:26:16,961 - INFO - Progress: 2.9 min | V: 3.500V | I: -0.765A | Measuring: True
+2025-07-03 16:26:26,971 - INFO - Progress: 3.0 min | V: 3.500V | I: -0.765A | Measuring: True
+2025-07-03 16:26:36,981 - INFO - Progress: 3.2 min | V: 3.500V | I: -0.765A | Measuring: True
+2025-07-03 16:26:46,992 - INFO - Progress: 3.4 min | V: 3.500V | I: -0.717A | Measuring: True
+2025-07-03 16:26:57,002 - INFO - Progress: 3.5 min | V: 3.500V | I: -0.717A | Measuring: True
+2025-07-03 16:27:07,013 - INFO - Progress: 3.7 min | V: 3.500V | I: -0.717A | Measuring: True
+2025-07-03 16:27:17,022 - INFO - Progress: 3.9 min | V: 3.500V | I: -0.717A | Measuring: True
+2025-07-03 16:27:27,033 - INFO - Progress: 4.0 min | V: 3.500V | I: -0.717A | Measuring: True
+2025-07-03 16:27:37,043 - INFO - Progress: 4.2 min | V: 3.500V | I: -0.717A | Measuring: True
+2025-07-03 16:27:47,054 - INFO - Progress: 4.4 min | V: 3.500V | I: -0.717A | Measuring: True
+2025-07-03 16:27:57,064 - INFO - Progress: 4.5 min | V: 3.500V | I: -0.717A | Measuring: True
+2025-07-03 16:28:07,074 - INFO - Progress: 4.7 min | V: 3.500V | I: -0.717A | Measuring: False
+2025-07-03 16:28:07,074 - INFO - Measurement completed in 4.7 minutes
+2025-07-03 16:28:07,074 - INFO - === DISCHARGE COMPLETED ===
+2025-07-03 16:28:07,074 - INFO - === STARTING CHARGE & CHARACTERIZATION ===
+2025-07-03 16:28:07,086 - INFO - Waiting for charge to start...
+2025-07-03 16:28:12,087 - INFO - Waiting for measurement (max 1 hours)...
+2025-07-03 16:28:14,099 - INFO - Progress: 0.0 min | V: 3.500V | I: -0.717A | Measuring: True
+2025-07-03 16:28:24,111 - INFO - Progress: 0.2 min | V: 3.500V | I: -0.717A | Measuring: True
+2025-07-03 16:28:34,120 - INFO - Progress: 0.4 min | V: 3.500V | I: -0.717A | Measuring: False
+2025-07-03 16:28:34,121 - INFO - Measurement completed in 0.4 minutes
+2025-07-03 16:28:34,121 - INFO - === CHARGE & CHARACTERIZATION COMPLETED ===
+2025-07-03 16:28:34,121 - INFO - === GENERATING BATTERY MODEL ===
+2025-07-03 16:28:40,138 - ERROR - Test failed: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-03 16:28:40,139 - INFO - Cleanup completed

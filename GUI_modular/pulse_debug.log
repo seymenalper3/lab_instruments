@@ -1,0 +1,12 @@
+Pulse test started at 2025-07-02 16:23:59.840568
+Pulse file: pulse_bt_20250702_162359.csv
+Rest file: rest_evoc_20250702_162359.csv
+Parameters: pulses=2, pulse_time=20.0, rest_time=20.0, i_pulse=0.4
+
+DEBUG: Pulse 1 saved 0 data points
+DEBUG: Pulse 2 saved 0 data points
+
+Pulse test completed at 2025-07-02 16:25:36.887262
+Pulse file size: 23 bytes
+Rest file size: 1635 bytes
+WARNING: Pulse file appears to be empty (only headers)
