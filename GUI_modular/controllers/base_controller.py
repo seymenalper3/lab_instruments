@@ -24,6 +24,9 @@ class BaseDeviceController(ABC):
             self.interface.connect()
             self.connected = True
             self.identify()
+            # Set to remote mode if available
+            if hasattr(self, 'remote_mode'):
+                self.remote_mode()
             return True
         except Exception as e:
             self.connected = False
@@ -34,6 +37,12 @@ class BaseDeviceController(ABC):
         try:
             if hasattr(self, 'output_off'):
                 self.output_off()
+        except:
+            pass
+        try:
+            # Set to local mode if available
+            if hasattr(self, 'local_mode'):
+                self.local_mode()
         except:
             pass
         self.interface.disconnect()

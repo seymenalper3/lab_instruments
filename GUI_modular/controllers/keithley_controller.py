@@ -439,3 +439,283 @@ class KeithleyController(BaseDeviceController):
                 self.local_mode()
             except:
                 pass
+                
+    def run_battery_model_test(self, 
+                          discharge_voltage: float = 3.0,
+                          discharge_current_end: float = 0.4,
+                          charge_vfull: float = 4.20,
+                          charge_ilimit: float = 1.00,
+                          esr_interval: int = 30,
+                          model_slot: int = 4,
+                          v_min: float = 2.5,
+                          v_max: float = 4.2,
+                          export_csv: bool = True) -> dict:
+        """
+        Run complete battery model generation test
+        
+        Args:
+            discharge_voltage: End voltage for discharge (V)
+            discharge_current_end: End current for discharge (A)
+            charge_vfull: Full charge voltage (V)
+            charge_ilimit: Charge current limit (A)
+            esr_interval: ESR measurement interval (s)
+            model_slot: Internal memory slot (1-9)
+            v_min: Model voltage range minimum
+            v_max: Model voltage range maximum
+            export_csv: Whether to export model to CSV
+            
+        Returns:
+            Dictionary with test results and file paths
+        """
+        if not self.connected:
+            raise Exception("Device not connected")
+        
+        if self.busy:
+            raise Exception("Device is busy with another operation")
+            
+        # Validate parameters
+        if discharge_voltage < 2.0 or discharge_voltage > 4.5:
+            raise ValueError("Discharge voltage must be between 2.0 and 4.5V")
+        if discharge_current_end < 0.1 or discharge_current_end > 2.0:
+            raise ValueError("Discharge end current must be between 0.1 and 2.0A")
+        if charge_vfull < 3.0 or charge_vfull > 4.5:
+            raise ValueError("Charge voltage must be between 3.0 and 4.5V")
+        if charge_ilimit < 0.1 or charge_ilimit > self.device_spec.max_current:
+            raise ValueError(f"Charge current must be between 0.1 and {self.device_spec.max_current}A")
+        if model_slot < 1 or model_slot > 9:
+            raise ValueError("Model slot must be between 1 and 9")
+        if esr_interval < 1 or esr_interval > 300:
+            raise ValueError("ESR interval must be between 1 and 300 seconds")
+            
+        # Set device as busy
+        self.set_busy(True)
+        
+        import time
+        import csv
+        from datetime import datetime
+        from pathlib import Path
+        
+        test_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+        results = {
+            'test_id': test_id,
+            'model_slot': model_slot,
+            'start_time': datetime.now().isoformat(),
+            'model_file': None,
+            'data_file': None,
+            'success': False
+        }
+        
+        try:
+            print(f"Starting battery model generation test {test_id}")
+            
+            # 1) Clear and initialize
+            print("Clearing buffers and initializing...")
+            self.send_command('*CLS')
+            self.send_command(':BATT1:DATA:CLE')
+            self.send_command(':BATT:DATA:CLE')
+            self.send_command(':TRACe:CLEar')
+            
+            # 2) Discharge phase
+            print("=== STARTING BATTERY DISCHARGE ===")
+            print(f"Discharge to {discharge_voltage}V, end current {discharge_current_end}A")
+            
+            self.send_command(':BATT:TEST:MODE DIS')
+            self.send_command(f':BATT:TEST:VOLT {discharge_voltage}')
+            self.send_command(f':BATT:TEST:CURR:END {discharge_current_end}')
+            self.send_command(':BATT:OUTP ON')
+            
+            # Wait for discharge to complete
+            start_time = time.time()
+            max_discharge_time = 4 * 3600  # 4 hours max
+            
+            while True:
+                # Check measurement status
+                try:
+                    cond = int(self.query_command(':STAT:OPER:INST:ISUM:COND?'))
+                    measuring = bool(cond & 0x10)
+                    
+                    # Try to get voltage/current
+                    try:
+                        voltage = float(self.query_command(':BATT:VOLT?'))
+                        current = float(self.query_command(':BATT:CURR?'))
+                        elapsed = time.time() - start_time
+                        print(f"Discharge progress: {elapsed/60:.1f} min | V: {voltage:.3f}V | I: {current:.3f}A")
+                    except:
+                        pass
+                        
+                    if not measuring:
+                        print(f"Discharge completed in {(time.time() - start_time)/60:.1f} minutes")
+                        break
+                        
+                    if time.time() - start_time > max_discharge_time:
+                        raise TimeoutError("Discharge exceeded 4 hours")
+                        
+                    time.sleep(30)  # Check every 30 seconds
+                    
+                except Exception as e:
+                    print(f"Status check error: {e}")
+                    time.sleep(5)
+                    
+            self.send_command(':BATT:OUTP OFF')
+            print("=== DISCHARGE COMPLETED ===")
+            
+            # 3) Charge and characterization phase
+            print("=== STARTING CHARGE & CHARACTERIZATION ===")
+            print(f"Charge to {charge_vfull}V, current limit {charge_ilimit}A, ESR interval {esr_interval}s")
+            
+            self.send_command(f':BATT:TEST:SENS:AH:VFUL {charge_vfull}')
+            self.send_command(f':BATT:TEST:SENS:AH:ILIM {charge_ilimit}')
+            self.send_command(f':BATT:TEST:SENS:AH:ESRI S{esr_interval}')
+            self.send_command(':TRACe:CLEar:AUTO ON')
+            self.send_command(':TRACe:FEED:CONT ALW')
+            
+            # Start A-H measurement
+            self.send_command(':BATT:OUTP ON')
+            self.send_command(':BATT:TEST:SENS:AH:EXEC STAR')
+            
+            # Wait for charge to complete
+            start_time = time.time()
+            max_charge_time = 8 * 3600  # 8 hours max
+            
+            while True:
+                try:
+                    cond = int(self.query_command(':STAT:OPER:INST:ISUM:COND?'))
+                    measuring = bool(cond & 0x10)
+                    
+                    # Try to get voltage/current
+                    try:
+                        voltage = float(self.query_command(':BATT:VOLT?'))
+                        current = float(self.query_command(':BATT:CURR?'))
+                        elapsed = time.time() - start_time
+                        print(f"Charge progress: {elapsed/60:.1f} min | V: {voltage:.3f}V | I: {current:.3f}A")
+                    except:
+                        pass
+                        
+                    if not measuring:
+                        print(f"Charge completed in {(time.time() - start_time)/60:.1f} minutes")
+                        break
+                        
+                    if time.time() - start_time > max_charge_time:
+                        raise TimeoutError("Charge exceeded 8 hours")
+                        
+                    time.sleep(30)  # Check every 30 seconds
+                    
+                except Exception as e:
+                    print(f"Status check error: {e}")
+                    time.sleep(5)
+                    
+            print("=== CHARGE & CHARACTERIZATION COMPLETED ===")
+            
+            # 4) Generate and save model
+            print("=== GENERATING BATTERY MODEL ===")
+            self.send_command(f':BATT:TEST:SENS:AH:GMOD:RANG {v_min},{v_max}')
+            self.send_command(f':BATT:TEST:SENS:AH:GMOD:SAVE:INT {model_slot}')
+            
+            # Wait for model generation
+            time.sleep(2)
+            self.query_command('*OPC?')  # Wait for operation complete
+            
+            # Verify save
+            slots = self.query_command(':BATT:TEST:SENS:AH:GMOD:CAT?')
+            print(f"Model saved to slot {model_slot}. Available slots: {slots}")
+            
+            # 5) Export model to CSV if requested
+            if export_csv:
+                print("=== EXPORTING MODEL TO CSV ===")
+                
+                # Recall model
+                self.send_command(f':BATT:MOD:RCL {model_slot}')
+                time.sleep(1)
+                
+                # Prepare CSV file
+                data_dir = Path('./battery_models')
+                data_dir.mkdir(exist_ok=True)
+                csv_file = data_dir / f'battery_model_slot{model_slot}_{test_id}.csv'
+                
+                with open(csv_file, 'w', newline='') as f:
+                    writer = csv.writer(f)
+                    writer.writerow(['SOC (%)', 'Voc (V)', 'ESR (Ω)', 'Timestamp'])
+                    
+                    # Read model data (101 points for complete model)
+                    rows_written = 0
+                    for i in range(101):
+                        try:
+                            resp = self.query_command(f':BATT:MOD{model_slot}:ROW{i}?')
+                            if resp and ',' in resp:
+                                parts = resp.strip().split(',')
+                                if len(parts) >= 2:
+                                    voc = float(parts[0])
+                                    esr = float(parts[1])
+                                    soc = i  # 0-100%
+                                    timestamp = datetime.now().isoformat()
+                                    writer.writerow([f'{soc}', f'{voc:.4f}', f'{esr:.4f}', timestamp])
+                                    rows_written += 1
+                        except Exception as e:
+                            print(f"Error reading row {i}: {e}")
+                            
+                print(f"Model exported to: {csv_file} ({rows_written} rows)")
+                results['model_file'] = str(csv_file)
+                
+            # 6) Export measurement data
+            try:
+                print("=== EXPORTING MEASUREMENT DATA ===")
+                points_str = self.query_command(':TRACe:POINts:ACTual?')
+                points = int(points_str) if points_str else 0
+                
+                if points > 0:
+                    print(f"Buffer contains {points} data points")
+                    data_file = data_dir / f'battery_measurements_{test_id}.csv'
+                    
+                    with open(data_file, 'w', newline='') as f:
+                        writer = csv.writer(f)
+                        writer.writerow(['Time (s)', 'Voltage (V)', 'Current (A)', 'Capacity (Ah)', 'ESR (Ω)'])
+                        
+                        # Read data in chunks
+                        chunk_size = 100
+                        total_rows = 0
+                        
+                        for start in range(1, points + 1, chunk_size):
+                            end = min(start + chunk_size - 1, points)
+                            
+                            try:
+                                data = self.query_command(
+                                    f':BATT1:DATA:DATA:SEL? {start},{end},"VOLT,CURR,AH,RES,REL"'
+                                )
+                                
+                                if data:
+                                    rows = [r.split(',') for r in data.split(';') if r]
+                                    for row in rows:
+                                        if len(row) >= 5:
+                                            writer.writerow(row)
+                                            total_rows += 1
+                            except Exception as e:
+                                print(f"Failed to read chunk {start}-{end}: {e}")
+                                
+                    print(f"Measurement data exported to: {data_file} ({total_rows} rows)")
+                    results['data_file'] = str(data_file)
+                    
+            except Exception as e:
+                print(f"Failed to export measurement data: {e}")
+                
+            results['success'] = True
+            results['end_time'] = datetime.now().isoformat()
+            print("=== BATTERY MODEL TEST COMPLETED SUCCESSFULLY ===")
+            
+            return results
+            
+        except Exception as e:
+            print(f"Battery model test failed: {e}")
+            results['error'] = str(e)
+            results['end_time'] = datetime.now().isoformat()
+            raise
+            
+        finally:
+            # Cleanup
+            try:
+                self.send_command(':BATT:OUTP OFF')
+                self.send_command('SYST:LOC')
+            except:
+                pass
+                
+            # Clear busy state
+            self.set_busy(False)
