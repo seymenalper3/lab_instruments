@@ -1,0 +1,2 @@
+elapsed_s,target_s,set_current_A,measured_V,measured_A,mode
+12.017,1.0,0.721910,0.0000,0.000000,CHARGE

@@ -1,0 +1,48 @@
+{
+  "test_id": "20250704_161257",
+  "test_date": "2025-07-04T16:25:49.755376",
+  "csv_profile": "keithley_h\u00fccre_test2.csv",
+  "configuration": {
+    "evoc_delay": 0.05,
+    "sample_interval": 0.04,
+    "voltage_limits": {
+      "min": 2.5,
+      "max": 4.5
+    },
+    "current_limits": {
+      "max_charge": 1.2,
+      "max_discharge": 1.2
+    },
+    "safety": {
+      "temp_limit": 45.0,
+      "timeout": 7200
+    }
+  },
+  "results": {
+    "initial_measurements": {
+      "voc": 0.1935,
+      "esr": 3.6355,
+      "timestamp": "2025-07-04T16:14:39.663560"
+    },
+    "final_measurements": {
+      "voc": 0.1943,
+      "esr": 3.5935,
+      "timestamp": "2025-07-04T16:21:07.241930"
+    },
+    "health_metrics_before": {
+      "voltage": 0.0,
+      "current": 0.0
+    },
+    "health_metrics_after": {
+      "voltage": 0.0,
+      "current": 0.0
+    },
+    "aging_indicators": {
+      "esr_change_ohm": -0.041999999999999815,
+      "esr_change_percent": -1.1552743776646903,
+      "voc_change_v": 0.0007999999999999952,
+      "voc_change_percent": 0.4134366925064574,
+      "assessment": "D\u00fc\u015f\u00fck ya\u015flanma - Batarya sa\u011fl\u0131kl\u0131"
+    }
+  }
+}

@@ -17,7 +17,7 @@ import time, csv, pyvisa, sys
 RESOURCE   = 'USB0::1510::8833::4587429::0::INSTR'
 MODEL_SLOT = 4                # 1-9 internal memory
 CSV_FILE   = f"battery_model_{MODEL_SLOT}.csv"
-RANGE_LOW, RANGE_HIGH = 2.5, 4.2   # model voltage range
+RANGE_LOW, RANGE_HIGH = 3.5, 3.9   # model voltage range
 POLL_SEC   = 10                # poll interval while waiting
 TIMEOUT_S  = 8 * 3600          # max wait 8 h (adjust as needed)
 
