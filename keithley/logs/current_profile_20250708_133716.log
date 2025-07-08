@@ -1,0 +1,14 @@
+2025-07-08 13:37:16,429 - INFO - Available resources: ('ASRL/dev/ttyS0::INSTR', 'ASRL/dev/ttyS1::INSTR', 'ASRL/dev/ttyS2::INSTR', 'ASRL/dev/ttyS3::INSTR', 'ASRL/dev/ttyS4::INSTR', 'ASRL/dev/ttyS5::INSTR', 'ASRL/dev/ttyS6::INSTR', 'ASRL/dev/ttyS7::INSTR', 'ASRL/dev/ttyS8::INSTR', 'ASRL/dev/ttyS9::INSTR', 'ASRL/dev/ttyS10::INSTR', 'ASRL/dev/ttyS11::INSTR', 'ASRL/dev/ttyS12::INSTR', 'ASRL/dev/ttyS13::INSTR', 'ASRL/dev/ttyS14::INSTR', 'ASRL/dev/ttyS15::INSTR', 'ASRL/dev/ttyS16::INSTR', 'ASRL/dev/ttyS17::INSTR', 'ASRL/dev/ttyS18::INSTR', 'ASRL/dev/ttyS19::INSTR', 'ASRL/dev/ttyS20::INSTR', 'ASRL/dev/ttyS21::INSTR', 'ASRL/dev/ttyS22::INSTR', 'ASRL/dev/ttyS23::INSTR', 'ASRL/dev/ttyS24::INSTR', 'ASRL/dev/ttyS25::INSTR', 'ASRL/dev/ttyS26::INSTR', 'ASRL/dev/ttyS27::INSTR', 'ASRL/dev/ttyS28::INSTR', 'ASRL/dev/ttyS29::INSTR', 'ASRL/dev/ttyS30::INSTR', 'ASRL/dev/ttyS31::INSTR', 'USB0::1510::8833::4587429::0::INSTR')
+2025-07-08 13:37:17,282 - INFO - Connected to: KEITHLEY INSTRUMENTS,MODEL 2281S-20-6,4587429,01.08b
+2025-07-08 13:37:17,824 - INFO - Instrument initialized
+2025-07-08 13:37:17,825 - INFO - Loaded 101 data points from keithley_hücre_test2.csv
+2025-07-08 13:37:21,360 - INFO - Aggregated 101 points to 42 segments
+2025-07-08 13:37:21,361 - INFO - Output ON - Starting current profile
+2025-07-08 13:37:21,704 - INFO - Progress: 0.3s | Set: 0.000A | Measured: V=3.700V, I=0.000A
+2025-07-08 13:37:39,614 - INFO - Progress: 18.3s | Set: -0.126A | Measured: V=3.700V, I=-0.126A
+2025-07-08 13:38:07,515 - INFO - Progress: 46.2s | Set: 0.987A | Measured: V=3.700V, I=0.987A
+2025-07-08 13:38:40,415 - INFO - Progress: 79.1s | Set: 0.868A | Measured: V=3.700V, I=0.868A
+2025-07-08 13:39:11,315 - INFO - Progress: 110.0s | Set: 0.728A | Measured: V=3.700V, I=0.728A
+2025-07-08 13:39:13,606 - INFO - Test completed - Output OFF
+2025-07-08 13:39:13,606 - INFO - Data saved to: data/current_profile_test_20250708_133716.csv
+2025-07-08 13:39:13,607 - INFO - Disconnected from instrument

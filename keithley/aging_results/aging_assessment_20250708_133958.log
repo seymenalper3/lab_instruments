@@ -1,0 +1,24 @@
+2025-07-08 13:39:59,602 - INFO - Connected to: KEITHLEY INSTRUMENTS,MODEL 2281S-20-6,4587429,01.08b
+2025-07-08 13:42:22,616 - INFO - 
+============================================================
+2025-07-08 13:42:22,616 - INFO - BATARYA SAĞLIK ÖLÇÜMLERİ BAŞLIYOR
+2025-07-08 13:42:22,616 - INFO - ============================================================
+2025-07-08 13:42:22,616 - INFO - Cihaz hazırlanıyor...
+2025-07-08 13:42:25,619 - INFO - 
+1. ESR ve Voc ölçümü yapılıyor...
+2025-07-08 13:42:27,624 - INFO - ✓ Voc (Açık Devre Voltajı): 0.0000 V
+2025-07-08 13:42:27,625 - INFO - ✓ ESR (İç Direnç): 0.0000 Ω
+2025-07-08 13:42:27,625 - INFO - 
+2. Pulse test yapılıyor...
+2025-07-08 13:42:41,635 - ERROR - Ölçüm hatası: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 13:42:41,637 - INFO - 
+============================================================
+2025-07-08 13:42:41,640 - INFO - SAĞLIK ÖLÇÜMLERİ TAMAMLANDI
+2025-07-08 13:42:41,640 - INFO - ============================================================
+2025-07-08 13:42:41,641 - INFO - Sonuçlar kaydedildi:
+2025-07-08 13:42:41,641 - INFO -   JSON: aging_results/battery_health_20250708_133958_current.json
+2025-07-08 13:42:41,641 - INFO -   CSV: aging_results/battery_health_20250708_133958_current.csv
+2025-07-08 13:42:41,641 - INFO - Sonuçlar kaydedildi:
+2025-07-08 13:42:41,641 - INFO -   JSON: aging_results/battery_health_20250708_133958_aging_analysis.json
+2025-07-08 13:42:41,641 - INFO -   CSV: aging_results/battery_health_20250708_133958_aging_analysis.csv
+2025-07-08 13:42:41,643 - INFO - Disconnected from instrument
