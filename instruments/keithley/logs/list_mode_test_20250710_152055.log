@@ -1,0 +1,17 @@
+2025-07-10 15:20:55,951 - INFO - Cihaz aranıyor...
+2025-07-10 15:20:56,364 - INFO - Bağlandı: KEITHLEY INSTRUMENTS,MODEL 2281S-20-6,4587429,01.08b
+2025-07-10 15:20:56,379 - INFO - Profil yüklendi: /home/seymen/lab_instruments/keithley/current_profile_for_sourcing.csv (24 nokta)
+2025-07-10 15:20:56,382 - INFO - Tüm adımlar için sabit bekleme süresi tespit edildi: 1.0 s
+2025-07-10 15:20:56,382 - INFO - Cihaz LIST modu için ayarlanıyor...
+2025-07-10 15:20:57,384 - INFO - Mod: LIST (Akım Listesi)
+2025-07-10 15:20:57,387 - INFO - Güvenlik limitleri ayarlandı: Voltaj <= 4.2V, Akım <= 1.2A
+2025-07-10 15:20:57,387 - INFO - TRACE belleği 24 nokta için hazırlanıyor...
+2025-07-10 15:20:57,394 - INFO - Cihaz ayarları tamamlandı.
+2025-07-10 15:20:57,396 - INFO - 24 adımlık akım listesi cihaza yüklendi.
+2025-07-10 15:20:57,412 - INFO - Profil uygulaması başlatılıyor. Çıkış açılıyor...
+2025-07-10 15:20:57,415 - INFO - Profil çalışıyor... Tamamlanması bekleniyor. Bu işlem uzun sürebilir.
+2025-07-10 15:20:57,425 - INFO - Profil uygulaması tamamlandı.
+2025-07-10 15:20:57,426 - INFO - 24 noktalık ölçüm verisi TRACE belleğinden çekiliyor...
+2025-07-10 15:21:18,434 - ERROR - TRACE verileri okunurken veya kaydedilirken bir hata oluştu: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-10 15:21:18,434 - INFO - Test sonlandırılıyor. Cihaz güvenli duruma getiriliyor.
+2025-07-10 15:21:18,437 - INFO - Cihaz bağlantısı kapatıldı.

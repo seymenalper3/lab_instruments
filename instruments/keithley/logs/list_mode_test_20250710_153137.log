@@ -1,0 +1,66 @@
+2025-07-10 15:31:37,156 - INFO - Cihaz aranıyor...
+2025-07-10 15:31:37,555 - INFO - Bağlandı: KEITHLEY INSTRUMENTS,MODEL 2281S-20-6,4587429,01.08b
+2025-07-10 15:31:37,558 - INFO - Profil yüklendi: /home/seymen/lab_instruments/keithley/current_profile_for_sourcing.csv (24 nokta)
+2025-07-10 15:31:37,559 - INFO - Tüm adımlar için sabit bekleme süresi tespit edildi: 1.0 s
+2025-07-10 15:31:37,559 - INFO - Cihaz LIST modu için ayarlanıyor...
+2025-07-10 15:31:37,560 - INFO - DEBUG - Sistem reset | Komut gönderildi: *RST
+2025-07-10 15:31:39,560 - INFO - DEBUG - Hata temizleme | Komut gönderildi: *CLS
+2025-07-10 15:31:39,561 - INFO - DEBUG - Cihaz durumu kontrol ediliyor...
+2025-07-10 15:31:39,563 - INFO - DEBUG - Sistem hatası kontrolü | Komut: :SYST:ERR? | Sonuç: 0,"No error"
+2025-07-10 15:31:39,566 - INFO - DEBUG - Operasyon durumu | Komut: :STAT:OPER? | Sonuç: 0
+2025-07-10 15:31:39,569 - INFO - DEBUG - Çıkış durumu | Komut: :OUTP? | Sonuç: 0
+2025-07-10 15:31:39,569 - INFO - DEBUG - Akım kaynağı modu | Komut gönderildi: :SOUR:FUNC CURR
+2025-07-10 15:32:40,578 - ERROR - DEBUG - Mevcut kaynak modu | Komut: :SOUR:FUNC? | HATA: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-10 15:33:41,584 - ERROR - DEBUG - Mevcut akım modu | Komut: :SOUR:CURR:MODE? | HATA: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-10 15:33:41,585 - INFO - DEBUG - LIST modu ayarı | Komut gönderildi: :SOUR:CURR:MODE LIST
+2025-07-10 15:34:42,595 - ERROR - DEBUG - LIST modu doğrulama | Komut: :SOUR:CURR:MODE? | HATA: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-10 15:34:42,595 - INFO - Mod: LIST (Akım Listesi) - Doğrulama: None
+2025-07-10 15:34:42,595 - INFO - DEBUG - Voltaj koruma ayarı | Komut gönderildi: :SOUR:VOLT:PROT 4.2
+2025-07-10 15:34:42,598 - INFO - DEBUG - Akım koruma ayarı | Komut gönderildi: :CURR:PROT 1.2
+2025-07-10 15:34:42,605 - INFO - DEBUG - Voltaj koruma doğrulama | Komut: :SOUR:VOLT:PROT? | Sonuç: 21.0
+2025-07-10 15:34:42,609 - INFO - DEBUG - Akım koruma doğrulama | Komut: :CURR:PROT? | Sonuç: 6.10
+2025-07-10 15:34:42,609 - INFO - Güvenlik limitleri ayarlandı: Voltaj <= 21.0V, Akım <= 6.10A
+2025-07-10 15:34:42,609 - INFO - TRACE belleği 24 nokta için hazırlanıyor...
+2025-07-10 15:34:42,612 - INFO - DEBUG - TRACE destek kontrolü | Komut: :TRAC:POIN? | Sonuç: 2500
+2025-07-10 15:34:42,613 - INFO - DEBUG - TRACE bellek temizleme | Komut gönderildi: :TRAC:CLE
+2025-07-10 15:34:43,114 - INFO - DEBUG - TRACE bellek boyutu | Komut gönderildi: :TRAC:POIN 24
+2025-07-10 15:34:43,116 - INFO - DEBUG - TRACE veri kaynağı | Komut gönderildi: :TRAC:FEED SENS
+2025-07-10 15:34:43,118 - INFO - DEBUG - TRACE tetikleme modu | Komut gönderildi: :TRAC:FEED:CONT NEXT
+2025-07-10 15:34:43,122 - INFO - DEBUG - TRACE nokta sayısı doğrulama | Komut: :TRAC:POIN? | Sonuç: 2500
+2025-07-10 15:34:43,125 - INFO - DEBUG - TRACE veri kaynağı doğrulama | Komut: :TRAC:FEED? | Sonuç: SENS
+2025-07-10 15:34:43,125 - INFO - Cihaz ayarları tamamlandı.
+2025-07-10 15:34:43,126 - INFO - DEBUG - Cihaz durumu kontrol ediliyor...
+2025-07-10 15:34:43,129 - INFO - DEBUG - Sistem hatası kontrolü | Komut: :SYST:ERR? | Sonuç: -113,"Undefined header;  - :SOUR:FUNC "
+2025-07-10 15:34:43,132 - INFO - DEBUG - Operasyon durumu | Komut: :STAT:OPER? | Sonuç: 0
+2025-07-10 15:34:43,135 - INFO - DEBUG - Çıkış durumu | Komut: :OUTP? | Sonuç: 0
+2025-07-10 15:34:43,136 - INFO - DEBUG - Gönderilecek akım listesi: 0.0,0.2,0.4,0.6,0.8,1.0,1.0,1.0,1.0,1.0,1.0,0.8,0.6,0.4,0.2,0.1,-0.2,-0.4,-0.6,-0.8,-1.0,-0.5,0.2,0....
+2025-07-10 15:34:43,136 - INFO - DEBUG - Akım listesi yükleme | Komut gönderildi: :SOUR:LIST:CURR 0.0,0.2,0.4,0.6,0.8,1.0,1.0,1.0,1.0,1.0,1.0,0.8,0.6,0.4,0.2,0.1,-0.2,-0.4,-0.6,-0.8,-1.0,-0.5,0.2,0.4
+2025-07-10 15:35:44,148 - ERROR - DEBUG - Akım listesi doğrulama | Komut: :SOUR:LIST:CURR? | HATA: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-10 15:35:44,148 - INFO - 24 adımlık akım listesi cihaza yüklendi.
+2025-07-10 15:35:44,148 - INFO - DEBUG - Bekleme süresi ayarı | Komut gönderildi: :SOUR:LIST:DWEL 1.0
+2025-07-10 15:36:45,155 - ERROR - DEBUG - Bekleme süresi doğrulama | Komut: :SOUR:LIST:DWEL? | HATA: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-10 15:36:45,155 - INFO - DEBUG - Liste tekrar sayısı | Komut gönderildi: :SOUR:LIST:COUN 1
+2025-07-10 15:37:46,163 - ERROR - DEBUG - Liste tekrar sayısı doğrulama | Komut: :SOUR:LIST:COUN? | HATA: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-10 15:37:46,164 - INFO - DEBUG - Tetikleme kaynağı | Komut gönderildi: :TRIG:SOUR IMM
+2025-07-10 15:37:46,168 - INFO - DEBUG - Tetikleme sayısı | Komut gönderildi: :TRIG:COUN 24
+2025-07-10 15:37:46,171 - INFO - DEBUG - Tetikleme kaynağı doğrulama | Komut: :TRIG:SOUR? | Sonuç: IMM
+2025-07-10 15:37:46,174 - INFO - DEBUG - Tetikleme sayısı doğrulama | Komut: :TRIG:COUN? | Sonuç: 1
+2025-07-10 15:37:46,175 - INFO - Profil uygulaması başlatılıyor. Çıkış açılıyor...
+2025-07-10 15:37:46,175 - INFO - DEBUG - Çıkış açma | Komut gönderildi: :OUTP ON
+2025-07-10 15:37:46,180 - INFO - DEBUG - Çıkış durumu kontrol | Komut: :OUTP? | Sonuç: 0
+2025-07-10 15:37:46,181 - INFO - DEBUG - Profil başlatma | Komut gönderildi: :INIT
+2025-07-10 15:37:46,181 - INFO - DEBUG - Cihaz durumu kontrol ediliyor...
+2025-07-10 15:37:46,187 - INFO - DEBUG - Sistem hatası kontrolü | Komut: :SYST:ERR? | Sonuç: -113,"Undefined header;  - :SOUR:FUNC?"
+2025-07-10 15:37:46,191 - INFO - DEBUG - Operasyon durumu | Komut: :STAT:OPER? | Sonuç: 0
+2025-07-10 15:37:46,194 - INFO - DEBUG - Çıkış durumu | Komut: :OUTP? | Sonuç: 0
+2025-07-10 15:37:46,194 - INFO - Profil çalışıyor... Tamamlanması bekleniyor. Bu işlem uzun sürebilir.
+2025-07-10 15:37:46,194 - INFO - İlerleme takip ediliyor...
+2025-07-10 15:38:47,202 - ERROR - DEBUG - Aktüel nokta sayısı | Komut: :TRAC:POIN:ACTU? | HATA: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-10 15:39:49,208 - ERROR - DEBUG - Aktüel nokta sayısı | Komut: :TRAC:POIN:ACTU? | HATA: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-10 15:40:51,215 - ERROR - DEBUG - Aktüel nokta sayısı | Komut: :TRAC:POIN:ACTU? | HATA: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-10 15:40:51,215 - ERROR - Çok fazla ardışık hata. TRACE komutu desteklenmeyebilir.
+2025-07-10 15:40:52,216 - INFO - Profil uygulaması tamamlandı.
+2025-07-10 15:40:52,216 - INFO - 24 noktalık ölçüm verisi TRACE belleğinden çekiliyor...
+2025-07-10 15:41:52,217 - WARNING - Test kullanıcı tarafından durduruldu.
+2025-07-10 15:41:52,218 - INFO - Test sonlandırılıyor. Cihaz güvenli duruma getiriliyor.
+2025-07-10 15:41:53,218 - ERROR - Cihaz kapatılırken hata: [Errno 110] Operation timed out

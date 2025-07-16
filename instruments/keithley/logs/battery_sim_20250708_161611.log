@@ -1,0 +1,103 @@
+2025-07-08 16:16:11,382 - INFO - Available resources: ('ASRL/dev/ttyS0::INSTR', 'ASRL/dev/ttyS1::INSTR', 'ASRL/dev/ttyS2::INSTR', 'ASRL/dev/ttyS3::INSTR', 'ASRL/dev/ttyS4::INSTR', 'ASRL/dev/ttyS5::INSTR', 'ASRL/dev/ttyS6::INSTR', 'ASRL/dev/ttyS7::INSTR', 'ASRL/dev/ttyS8::INSTR', 'ASRL/dev/ttyS9::INSTR', 'ASRL/dev/ttyS10::INSTR', 'ASRL/dev/ttyS11::INSTR', 'ASRL/dev/ttyS12::INSTR', 'ASRL/dev/ttyS13::INSTR', 'ASRL/dev/ttyS14::INSTR', 'ASRL/dev/ttyS15::INSTR', 'ASRL/dev/ttyS16::INSTR', 'ASRL/dev/ttyS17::INSTR', 'ASRL/dev/ttyS18::INSTR', 'ASRL/dev/ttyS19::INSTR', 'ASRL/dev/ttyS20::INSTR', 'ASRL/dev/ttyS21::INSTR', 'ASRL/dev/ttyS22::INSTR', 'ASRL/dev/ttyS23::INSTR', 'ASRL/dev/ttyS24::INSTR', 'ASRL/dev/ttyS25::INSTR', 'ASRL/dev/ttyS26::INSTR', 'ASRL/dev/ttyS27::INSTR', 'ASRL/dev/ttyS28::INSTR', 'ASRL/dev/ttyS29::INSTR', 'ASRL/dev/ttyS30::INSTR', 'ASRL/dev/ttyS31::INSTR', 'USB0::1510::8833::4587429::0::INSTR')
+2025-07-08 16:16:12,239 - INFO - Connected to: KEITHLEY INSTRUMENTS,MODEL 2281S-20-6,4587429,01.08b
+2025-07-08 16:16:12,741 - INFO - Setting Battery Simulator mode...
+2025-07-08 16:16:13,752 - INFO - Battery Simulator initialized:
+2025-07-08 16:16:13,753 - INFO - - Nominal voltage: 3.5233V
+2025-07-08 16:16:13,753 - INFO - - Capacity: 2.5Ah
+2025-07-08 16:16:13,753 - INFO - - Internal resistance: 0.1946Ω
+2025-07-08 16:16:17,451 - INFO - Stopping at max duration: 100s
+2025-07-08 16:16:17,452 - INFO - Loaded 101 data points from keithley_hücre_test2.csv
+2025-07-08 16:16:17,452 - INFO - Profile duration: 100s (1.7 min)
+2025-07-08 16:16:26,092 - INFO - Battery Simulator ON - Starting profile
+2025-07-08 16:16:32,299 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:16:32,300 - INFO - Progress: 6.2s | Set: 0.000A | Battery: V=3.5233V, I=0.000A
+2025-07-08 16:16:39,508 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:16:46,719 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:16:53,928 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:17:01,138 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:17:08,348 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:17:15,556 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:17:22,765 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:17:29,975 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:17:37,186 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:17:44,396 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:17:44,396 - INFO - Progress: 78.3s | Set: 0.984A | Battery: V=3.5233V, I=0.984A
+2025-07-08 16:17:51,606 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:17:58,815 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:18:06,024 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:18:13,234 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:18:20,444 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:18:27,653 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:18:34,862 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:18:42,075 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:18:49,285 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:18:56,496 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:18:56,496 - INFO - Progress: 150.4s | Set: 0.388A | Battery: V=3.5233V, I=0.388A
+2025-07-08 16:19:03,706 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:19:10,915 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:19:18,124 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:19:25,333 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:19:32,543 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:19:39,753 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:19:46,961 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:19:54,169 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:20:01,379 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:20:08,587 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:20:08,588 - INFO - Progress: 222.5s | Set: 0.235A | Battery: V=3.5233V, I=0.235A
+2025-07-08 16:20:15,796 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:20:23,005 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:20:30,216 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:20:37,426 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:20:44,635 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:20:51,844 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:20:59,054 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:21:05,260 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:21:12,479 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:21:19,686 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:21:19,687 - INFO - Progress: 293.6s | Set: 0.987A | Battery: V=3.5233V, I=0.987A
+2025-07-08 16:21:26,896 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:21:34,110 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:21:41,317 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:21:48,526 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:21:55,736 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:22:02,946 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:22:10,154 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:22:17,364 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:22:24,572 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:22:31,781 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:22:31,781 - INFO - Progress: 365.7s | Set: 0.662A | Battery: V=3.5233V, I=0.662A
+2025-07-08 16:22:38,990 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:22:46,200 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:22:53,407 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:23:00,617 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:23:07,825 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:23:15,034 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:23:22,244 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:23:29,451 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:23:36,660 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:23:43,867 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:23:43,867 - INFO - Progress: 437.8s | Set: 0.632A | Battery: V=3.5233V, I=0.632A
+2025-07-08 16:23:51,076 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:23:58,285 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:24:05,495 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:24:11,701 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:24:18,919 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:24:26,126 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:24:33,334 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:24:40,542 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:24:47,750 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:24:54,958 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:24:54,958 - INFO - Progress: 508.9s | Set: 0.868A | Battery: V=3.5233V, I=0.868A
+2025-07-08 16:25:02,168 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:25:09,379 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:25:16,587 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:25:23,796 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:25:31,005 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:25:38,213 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:25:45,421 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:25:52,627 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:25:59,837 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:26:07,045 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:26:07,045 - INFO - Progress: 581.0s | Set: 0.624A | Battery: V=3.5233V, I=0.624A
+2025-07-08 16:26:14,256 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:26:21,460 - INFO - Disconnected from instrument

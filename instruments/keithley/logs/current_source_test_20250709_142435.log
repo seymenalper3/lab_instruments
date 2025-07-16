@@ -1,0 +1,16 @@
+2025-07-09 14:24:35,192 - KeithleyCurrentSourcer - INFO - Searching for instrument...
+2025-07-09 14:24:36,750 - pyvisa - ERROR - Unknown attribute 1073676342 (0x3fff0036 - VI_ATTR_SUPPRESS_END_EN)
+Traceback (most recent call last):
+  File "/usr/lib/python3/dist-packages/pyvisa_py/sessions.py", line 669, in get_attribute
+    return self._get_attribute(attribute)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/pyvisa_py/usb.py", line 207, in _get_attribute
+    raise UnknownAttribute(attribute)
+pyvisa_py.sessions.UnknownAttribute: Unknown attribute 1073676342 (0x3fff0036 - VI_ATTR_SUPPRESS_END_EN)
+2025-07-09 14:24:36,752 - KeithleyCurrentSourcer - INFO - Successfully connected to: KEITHLEY INSTRUMENTS,MODEL 2281S-20-6,4587429,01.08b
+2025-07-09 14:24:36,752 - KeithleyCurrentSourcer - INFO - Configuring instrument for current sourcing...
+2025-07-09 14:24:36,760 - KeithleyCurrentSourcer - INFO - Mode set to CURRENT SOURCE with a 4.2V protection limit.
+2025-07-09 14:24:36,760 - KeithleyCurrentSourcer - INFO - Loading profile from 'keithley_hücre_test2.csv'...
+2025-07-09 14:24:36,760 - KeithleyCurrentSourcer - ERROR - CSV file must contain 'time_ms' and 'current_a' columns.
+2025-07-09 14:24:36,760 - KeithleyCurrentSourcer - INFO - Turning output off and disconnecting.
+2025-07-09 14:24:36,763 - KeithleyCurrentSourcer - INFO - Disconnected.

@@ -1,0 +1,7 @@
+2025-07-10 15:51:10,110 - INFO - Cihaz aranıyor...
+2025-07-10 15:51:10,509 - INFO - Bağlandı: KEITHLEY INSTRUMENTS,MODEL 2281S-20-6,4587429,01.08b
+2025-07-10 15:51:10,509 - INFO - Başlangıçtaki batarya voltajı ölçülüyor...
+2025-07-10 15:52:12,017 - ERROR - Başlangıç voltajı ölçülürken hata oluştu: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-10 15:52:12,017 - ERROR - Başlangıç voltajı ölçülemediği için teste devam edilemiyor.
+2025-07-10 15:52:12,017 - INFO - Test sonlandırılıyor. Cihaz güvenli duruma getiriliyor.
+2025-07-10 15:52:12,019 - INFO - Cihaz bağlantısı kapatıldı.

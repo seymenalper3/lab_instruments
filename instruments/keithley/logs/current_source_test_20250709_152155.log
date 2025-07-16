@@ -1,0 +1,17 @@
+2025-07-09 15:21:55,023 - KeithleyCurrentSourcer - INFO - Searching for instrument...
+2025-07-09 15:21:56,080 - KeithleyCurrentSourcer - INFO - Successfully connected to: KEITHLEY INSTRUMENTS,MODEL 2281S-20-6,4587429,01.08b
+2025-07-09 15:21:56,080 - KeithleyCurrentSourcer - INFO - Configuring instrument for current sourcing...
+2025-07-09 15:21:56,797 - KeithleyCurrentSourcer - INFO - Mode set to CURRENT SOURCE with a 4.2V protection limit.
+2025-07-09 15:21:56,798 - KeithleyCurrentSourcer - INFO - Loading profile from 'current_profile_for_sourcing.csv'...
+2025-07-09 15:21:56,802 - KeithleyCurrentSourcer - INFO - Successfully loaded 1216 data points.
+2025-07-09 15:21:59,686 - KeithleyCurrentSourcer - INFO - Test data will be saved to: data/sourcing_test_20250709_152155.csv
+2025-07-09 15:21:59,686 - KeithleyCurrentSourcer - INFO - Starting current profile execution. Turning output ON.
+2025-07-09 15:22:00,970 - KeithleyCurrentSourcer - ERROR - An unexpected error occurred during the test: could not convert string to float: '+0.000000E+00A,+3.314340E+00V,+5.832949E+03s'
+Traceback (most recent call last):
+  File "/home/seymen/lab_instruments/keithley/keithley_current_sourcing.py", line 199, in run_profile
+    measured_voltage = float(self.inst.query('MEAS:VOLT?'))
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: could not convert string to float: '+0.000000E+00A,+3.314340E+00V,+5.832949E+03s'
+2025-07-09 15:22:00,971 - KeithleyCurrentSourcer - INFO - Test finished or aborted. Turning output OFF.
+2025-07-09 15:22:01,473 - KeithleyCurrentSourcer - INFO - Turning output off and disconnecting.
+2025-07-09 15:22:01,487 - KeithleyCurrentSourcer - INFO - Disconnected.

@@ -1,0 +1,14 @@
+2025-07-09 16:08:28,041 - KeithleyCurrentSourcer - INFO - Searching for instrument...
+2025-07-09 16:08:29,098 - KeithleyCurrentSourcer - INFO - Successfully connected to: KEITHLEY INSTRUMENTS,MODEL 2281S-20-6,4587429,01.08b
+2025-07-09 16:08:29,099 - KeithleyCurrentSourcer - INFO - Configuring instrument for current sourcing...
+2025-07-09 16:08:29,817 - KeithleyCurrentSourcer - INFO - Mode set to CURRENT SOURCE with a 4.2V protection limit.
+2025-07-09 16:08:29,818 - KeithleyCurrentSourcer - INFO - Loading profile from 'current_profile_for_sourcing.csv'...
+2025-07-09 16:08:29,821 - KeithleyCurrentSourcer - INFO - Successfully loaded 1216 data points.
+2025-07-09 16:08:31,436 - KeithleyCurrentSourcer - INFO - Test data will be saved to: data/sourcing_test_20250709_160828.csv
+2025-07-09 16:08:31,437 - KeithleyCurrentSourcer - INFO - Starting current profile execution. Turning output ON.
+2025-07-09 16:08:32,758 - KeithleyCurrentSourcer - INFO - Time:    0.32s | Set:  0.000A | Read:  3.317V, -1.069A | Status: OK
+2025-07-09 16:08:52,758 - KeithleyCurrentSourcer - INFO - Time:   20.32s | Set:  0.388A | Read:  3.306V, -1.059A | Status: OK
+2025-07-09 16:09:12,757 - KeithleyCurrentSourcer - INFO - Time:   40.32s | Set:  0.987A | Read:  3.301V, -1.047A | Status: OK
+2025-07-09 16:09:19,072 - KeithleyCurrentSourcer - INFO - Test finished or aborted. Turning output OFF.
+2025-07-09 16:09:19,574 - KeithleyCurrentSourcer - INFO - Turning output off and disconnecting.
+2025-07-09 16:09:19,597 - KeithleyCurrentSourcer - INFO - Disconnected.

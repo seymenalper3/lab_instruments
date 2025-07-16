@@ -1,0 +1,34 @@
+2025-07-10 16:10:59,023 - INFO - Keithley 2281S'e bağlanılıyor...
+2025-07-10 16:10:59,923 - INFO - Bağlandı: KEITHLEY INSTRUMENTS,MODEL 2281S-20-6,4587429,01.08b
+2025-07-10 16:11:04,947 - INFO - Profil yüklendi: 24 nokta
+2025-07-10 16:11:04,948 - INFO - Orijinal akım aralığı: -1.000 A ile 1.000 A
+2025-07-10 16:11:04,949 - INFO - Cihaz akım aralığı: -1.000 A ile 1.000 A
+2025-07-10 16:11:04,949 - INFO - Sabit dwell süresi: 1 saniye
+2025-07-10 16:11:04,949 - INFO - Başlangıç voltajı ölçülüyor...
+2025-07-10 16:11:16,957 - ERROR - Sorgu hatası [:MEAS:VOLT?]: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-10 16:11:16,957 - ERROR - Voltaj okunamadı
+2025-07-10 16:11:26,048 - INFO - Cihaz yapılandırılıyor...
+2025-07-10 16:11:29,550 - INFO - Akım modu: LIST
+2025-07-10 16:11:40,557 - ERROR - Sorgu hatası [:SOUR:CURR:MODE?]: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-10 16:11:40,559 - INFO - Koruma limitleri: V<=4.2V, I<=1.5A
+2025-07-10 16:11:41,565 - INFO - TRACE belleği 24 nokta için yapılandırıldı
+2025-07-10 16:11:41,571 - WARNING - Sistem hatası: -113,"Undefined header;  - :SOUR:CURR:MODE "
+2025-07-10 16:11:41,571 - INFO - 24 akım değeri yükleniyor...
+2025-07-10 16:11:53,078 - ERROR - Sorgu hatası [:SOUR:LIST:CURR?]: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-10 16:11:53,587 - WARNING - Setup hatası: -113,"Undefined header;  - :SOUR:CURR:MODE?"
+2025-07-10 16:11:53,587 - INFO - Test başlatılıyor...
+2025-07-10 16:11:54,587 - INFO - Profil uygulanıyor...
+2025-07-10 16:12:05,594 - ERROR - Sorgu hatası [:TRAC:POIN:ACTU?]: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-10 16:12:18,602 - ERROR - Sorgu hatası [:TRAC:POIN:ACTU?]: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-10 16:12:31,609 - ERROR - Sorgu hatası [:TRAC:POIN:ACTU?]: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-10 16:12:44,616 - ERROR - Sorgu hatası [:TRAC:POIN:ACTU?]: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-10 16:12:57,624 - ERROR - Sorgu hatası [:TRAC:POIN:ACTU?]: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-10 16:13:10,631 - ERROR - Sorgu hatası [:TRAC:POIN:ACTU?]: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-10 16:13:10,631 - ERROR - Çok fazla okuma hatası, test durduruluyor
+2025-07-10 16:13:12,632 - INFO - Toplam test süresi: 78.0 saniye
+2025-07-10 16:13:12,632 - INFO - Test sonuçları kaydediliyor...
+2025-07-10 16:13:23,639 - ERROR - Sorgu hatası [:TRAC:POIN:ACTU?]: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-10 16:13:23,639 - WARNING - TRACE nokta sayısı okunamadı
+2025-07-10 16:13:23,639 - WARNING - Sonuçlar kaydedilemedi ama test tamamlandı
+2025-07-10 16:13:23,639 - INFO - Test başarıyla tamamlandı!
+2025-07-10 16:13:23,641 - INFO - Bağlantı kapatıldı

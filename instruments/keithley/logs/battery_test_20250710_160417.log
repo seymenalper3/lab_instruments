@@ -1,0 +1,32 @@
+2025-07-10 16:04:17,624 - INFO - Keithley 2281S'e bağlanılıyor...
+2025-07-10 16:04:18,017 - ERROR - Unknown attribute 1073676342 (0x3fff0036 - VI_ATTR_SUPPRESS_END_EN)
+Traceback (most recent call last):
+  File "/usr/lib/python3/dist-packages/pyvisa_py/sessions.py", line 669, in get_attribute
+    return self._get_attribute(attribute)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/pyvisa_py/usb.py", line 207, in _get_attribute
+    raise UnknownAttribute(attribute)
+pyvisa_py.sessions.UnknownAttribute: Unknown attribute 1073676342 (0x3fff0036 - VI_ATTR_SUPPRESS_END_EN)
+2025-07-10 16:04:18,026 - INFO - Bağlandı: KEITHLEY INSTRUMENTS,MODEL 2281S-20-6,4587429,01.08b
+2025-07-10 16:04:18,026 - ERROR - Unknown attribute 1073676342 (0x3fff0036 - VI_ATTR_SUPPRESS_END_EN)
+Traceback (most recent call last):
+  File "/usr/lib/python3/dist-packages/pyvisa_py/sessions.py", line 669, in get_attribute
+    return self._get_attribute(attribute)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/pyvisa_py/usb.py", line 207, in _get_attribute
+    raise UnknownAttribute(attribute)
+pyvisa_py.sessions.UnknownAttribute: Unknown attribute 1073676342 (0x3fff0036 - VI_ATTR_SUPPRESS_END_EN)
+2025-07-10 16:04:18,054 - WARNING - Sistem hatası: -113,"Undefined header;  - :SOUR:FUNC?"
+2025-07-10 16:04:33,535 - INFO - Profil yüklendi: 24 nokta
+2025-07-10 16:04:33,544 - INFO - Sabit dwell süresi: 1 saniye
+2025-07-10 16:04:33,544 - INFO - Başlangıç voltajı ölçülüyor...
+2025-07-10 16:04:34,045 - ERROR - Unknown attribute 1073676342 (0x3fff0036 - VI_ATTR_SUPPRESS_END_EN)
+Traceback (most recent call last):
+  File "/usr/lib/python3/dist-packages/pyvisa_py/sessions.py", line 669, in get_attribute
+    return self._get_attribute(attribute)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/pyvisa_py/usb.py", line 207, in _get_attribute
+    raise UnknownAttribute(attribute)
+pyvisa_py.sessions.UnknownAttribute: Unknown attribute 1073676342 (0x3fff0036 - VI_ATTR_SUPPRESS_END_EN)
+2025-07-10 16:05:05,052 - ERROR - Voltaj ölçüm hatası: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-10 16:05:05,054 - INFO - Bağlantı kapatıldı

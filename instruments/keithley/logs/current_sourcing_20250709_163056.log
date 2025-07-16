@@ -1,0 +1,14 @@
+2025-07-09 16:30:56,939 - WARNING - Found a USB RAW device whose serial number cannot be read. The partial VISA resource name is: USB0::3034::33107::???::0::RAW
+2025-07-09 16:30:58,960 - INFO - Available VISA resources: ('ASRL/dev/ttyS0::INSTR', 'ASRL/dev/ttyS1::INSTR', 'ASRL/dev/ttyS2::INSTR', 'ASRL/dev/ttyS3::INSTR', 'ASRL/dev/ttyS4::INSTR', 'ASRL/dev/ttyS5::INSTR', 'ASRL/dev/ttyS6::INSTR', 'ASRL/dev/ttyS7::INSTR', 'ASRL/dev/ttyS8::INSTR', 'ASRL/dev/ttyS9::INSTR', 'ASRL/dev/ttyS10::INSTR', 'ASRL/dev/ttyS11::INSTR', 'ASRL/dev/ttyS12::INSTR', 'ASRL/dev/ttyS13::INSTR', 'ASRL/dev/ttyS14::INSTR', 'ASRL/dev/ttyS15::INSTR', 'ASRL/dev/ttyS16::INSTR', 'ASRL/dev/ttyS17::INSTR', 'ASRL/dev/ttyS18::INSTR', 'ASRL/dev/ttyS19::INSTR', 'ASRL/dev/ttyS20::INSTR', 'ASRL/dev/ttyS21::INSTR', 'ASRL/dev/ttyS22::INSTR', 'ASRL/dev/ttyS23::INSTR', 'ASRL/dev/ttyS24::INSTR', 'ASRL/dev/ttyS25::INSTR', 'ASRL/dev/ttyS26::INSTR', 'ASRL/dev/ttyS27::INSTR', 'ASRL/dev/ttyS28::INSTR', 'ASRL/dev/ttyS29::INSTR', 'ASRL/dev/ttyS30::INSTR', 'ASRL/dev/ttyS31::INSTR', 'USB0::1510::8833::4587429::0::INSTR', 'TCPIP::169.254.35.149::INSTR')
+2025-07-09 16:30:58,977 - INFO - Connected to: KEITHLEY INSTRUMENTS,MODEL 2281S-20-6,4587429,01.08b
+2025-07-09 16:30:58,977 - INFO - Initializing instrument...
+2025-07-09 16:30:59,980 - INFO - Voltage compliance set to 4.2 V
+2025-07-09 16:30:59,981 - INFO - Hardware current protection set to 1.2 A
+2025-07-09 16:30:59,984 - INFO - Instrument initialized successfully.
+2025-07-09 16:30:59,984 - INFO - Loaded 16 data points from 'current_profile_for_sourcing.csv'.
+2025-07-09 16:31:04,207 - INFO - Turning output ON.
+2025-07-09 16:31:04,420 - ERROR - An error occurred during profile execution: could not convert string to float: '+2.006014E-04A'
+2025-07-09 16:31:04,420 - INFO - Turning output OFF.
+2025-07-09 16:31:04,428 - INFO - Data saved to 'data/sourcing_data_20250709_163056.csv'
+2025-07-09 16:31:04,428 - INFO - Disconnecting from instrument.
+2025-07-09 16:31:04,429 - INFO - Disconnected.

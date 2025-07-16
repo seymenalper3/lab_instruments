@@ -1,0 +1,13 @@
+2025-07-09 16:05:39,574 - KeithleyCurrentSourcer - INFO - Searching for instrument...
+2025-07-09 16:05:40,644 - KeithleyCurrentSourcer - INFO - Successfully connected to: KEITHLEY INSTRUMENTS,MODEL 2281S-20-6,4587429,01.08b
+2025-07-09 16:05:40,644 - KeithleyCurrentSourcer - INFO - Configuring instrument for current sourcing...
+2025-07-09 16:05:41,369 - KeithleyCurrentSourcer - INFO - Mode set to CURRENT SOURCE with a 4.2V protection limit.
+2025-07-09 16:05:41,369 - KeithleyCurrentSourcer - INFO - Loading profile from 'current_profile_for_sourcing.csv'...
+2025-07-09 16:05:41,373 - KeithleyCurrentSourcer - INFO - Successfully loaded 1216 data points.
+2025-07-09 16:05:43,244 - KeithleyCurrentSourcer - INFO - Test data will be saved to: data/sourcing_test_20250709_160539.csv
+2025-07-09 16:05:43,244 - KeithleyCurrentSourcer - INFO - Starting current profile execution. Turning output ON.
+2025-07-09 16:05:44,579 - KeithleyCurrentSourcer - ERROR - Could not parse instrument response: '-1.069319E+00A,+3.317085E+00V,+8.456881E+03s'
+2025-07-09 16:05:44,579 - KeithleyCurrentSourcer - ERROR - Parsing error: could not convert string to float: '-1.069319E+00A'. Stopping test.
+2025-07-09 16:05:44,580 - KeithleyCurrentSourcer - INFO - Test finished or aborted. Turning output OFF.
+2025-07-09 16:05:45,090 - KeithleyCurrentSourcer - INFO - Turning output off and disconnecting.
+2025-07-09 16:05:45,096 - KeithleyCurrentSourcer - INFO - Disconnected.

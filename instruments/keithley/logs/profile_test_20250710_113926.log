@@ -1,0 +1,14 @@
+2025-07-10 11:39:26,521 - INFO - Cihaz aranıyor...
+2025-07-10 11:39:26,645 - INFO - Bağlandı: KEITHLEY INSTRUMENTS,MODEL 2281S-20-6,4587429,01.08b
+2025-07-10 11:39:26,645 - INFO - Cihaz Batarya Test Modu için ayarlanıyor...
+2025-07-10 11:39:28,652 - INFO - Cihaz ayarları tamamlandı.
+2025-07-10 11:39:28,657 - INFO - Profil yüklendi: keithley_hücre_test2.csv (1216 nokta)
+2025-07-10 11:39:28,658 - INFO - Akım Aralığı: -0.839 A ile 1.000 A
+2025-07-10 11:39:28,658 - INFO - Sonuçlar şu dosyaya yazılacak: data/profile_test_results_20250710_113926.csv
+2025-07-10 11:39:28,659 - INFO - Batarya çıkışı açıldı. Test başlıyor...
+2025-07-10 11:39:53,770 - WARNING - Ölçüm komutları zaman aşımına uğradı, son çare deneniyor.
+2025-07-10 11:40:16,883 - WARNING - Ölçüm komutları zaman aşımına uğradı, son çare deneniyor.
+2025-07-10 11:40:27,989 - WARNING - Test kullanıcı tarafından durduruldu.
+2025-07-10 11:40:27,989 - INFO - Test sonlandırılıyor, cihaz güvenli moda alınıyor.
+2025-07-10 11:40:28,990 - ERROR - Temizleme sırasında hata: [Errno 110] Operation timed out
+2025-07-10 11:40:28,991 - INFO - Bağlantı kapatıldı.

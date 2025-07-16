@@ -1,0 +1,14 @@
+2025-07-08 16:34:09,226 - INFO - Available resources: ('ASRL/dev/ttyS0::INSTR', 'ASRL/dev/ttyS1::INSTR', 'ASRL/dev/ttyS2::INSTR', 'ASRL/dev/ttyS3::INSTR', 'ASRL/dev/ttyS4::INSTR', 'ASRL/dev/ttyS5::INSTR', 'ASRL/dev/ttyS6::INSTR', 'ASRL/dev/ttyS7::INSTR', 'ASRL/dev/ttyS8::INSTR', 'ASRL/dev/ttyS9::INSTR', 'ASRL/dev/ttyS10::INSTR', 'ASRL/dev/ttyS11::INSTR', 'ASRL/dev/ttyS12::INSTR', 'ASRL/dev/ttyS13::INSTR', 'ASRL/dev/ttyS14::INSTR', 'ASRL/dev/ttyS15::INSTR', 'ASRL/dev/ttyS16::INSTR', 'ASRL/dev/ttyS17::INSTR', 'ASRL/dev/ttyS18::INSTR', 'ASRL/dev/ttyS19::INSTR', 'ASRL/dev/ttyS20::INSTR', 'ASRL/dev/ttyS21::INSTR', 'ASRL/dev/ttyS22::INSTR', 'ASRL/dev/ttyS23::INSTR', 'ASRL/dev/ttyS24::INSTR', 'ASRL/dev/ttyS25::INSTR', 'ASRL/dev/ttyS26::INSTR', 'ASRL/dev/ttyS27::INSTR', 'ASRL/dev/ttyS28::INSTR', 'ASRL/dev/ttyS29::INSTR', 'ASRL/dev/ttyS30::INSTR', 'ASRL/dev/ttyS31::INSTR', 'USB0::1510::8833::4587429::0::INSTR')
+2025-07-08 16:34:10,082 - INFO - Connected to: KEITHLEY INSTRUMENTS,MODEL 2281S-20-6,4587429,01.08b
+2025-07-08 16:34:10,583 - INFO - Setting Battery Simulator mode...
+2025-07-08 16:34:11,590 - INFO - Battery Simulator initialized:
+2025-07-08 16:34:11,591 - INFO - - Nominal voltage: 3.5233V
+2025-07-08 16:34:11,591 - INFO - - Capacity: 2.5Ah
+2025-07-08 16:34:11,591 - INFO - - Internal resistance: 0.1946Ω
+2025-07-08 16:34:14,741 - INFO - Stopping at max duration: 100s
+2025-07-08 16:34:14,741 - INFO - Loaded 101 data points from keithley_hücre_test2.csv
+2025-07-08 16:34:14,741 - INFO - Profile duration: 100s (1.7 min)
+2025-07-08 16:34:17,294 - INFO - Battery Simulator ON - Starting profile
+2025-07-08 16:34:50,821 - WARNING - Measurement error: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-08 16:34:50,822 - INFO - Progress: 33.5s | Set: 0.000A | Battery: V=3.5233V, I=0.000A
+2025-07-08 16:35:25,341 - INFO - Disconnected from instrument

@@ -1,0 +1,19 @@
+2025-07-09 13:59:11,501 - INFO - Connected to: KEITHLEY INSTRUMENTS,MODEL 2281S-20-6,4587429,01.08b
+2025-07-09 13:59:18,322 - INFO - 
+============================================================
+2025-07-09 13:59:18,323 - INFO - BATARYA SAĞLIK ÖLÇÜMLERİ BAŞLIYOR
+2025-07-09 13:59:18,327 - INFO - ============================================================
+2025-07-09 13:59:31,411 - INFO - Cihaz hazırlanıyor...
+2025-07-09 13:59:34,414 - INFO - 
+1. ESR ve Voc ölçümü yapılıyor...
+2025-07-09 13:59:37,531 - INFO - ✓ ESR (İç Direnç): 0.1830 Ω
+2025-07-09 13:59:37,531 - INFO - ✓ Voc (Açık Devre Voltajı): 3.5242 V
+2025-07-09 13:59:37,535 - INFO - 
+2. Pulse test yapılıyor...
+2025-07-09 13:59:51,544 - ERROR - Ölçüm hatası: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-09 13:59:51,547 - INFO - 
+============================================================
+2025-07-09 13:59:51,547 - INFO - SAĞLIK ÖLÇÜMLERİ TAMAMLANDI
+2025-07-09 13:59:51,547 - INFO - ============================================================
+2025-07-09 13:59:51,548 - INFO - Results saved to: aging_results/battery_health_20250709_135910_baseline.json and aging_results/battery_health_20250709_135910_baseline.csv
+2025-07-09 13:59:51,582 - INFO - Disconnected from instrument

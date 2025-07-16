@@ -1,0 +1,58 @@
+2025-07-08 14:09:22,017 - INFO - Available resources: ('ASRL/dev/ttyS0::INSTR', 'ASRL/dev/ttyS1::INSTR', 'ASRL/dev/ttyS2::INSTR', 'ASRL/dev/ttyS3::INSTR', 'ASRL/dev/ttyS4::INSTR', 'ASRL/dev/ttyS5::INSTR', 'ASRL/dev/ttyS6::INSTR', 'ASRL/dev/ttyS7::INSTR', 'ASRL/dev/ttyS8::INSTR', 'ASRL/dev/ttyS9::INSTR', 'ASRL/dev/ttyS10::INSTR', 'ASRL/dev/ttyS11::INSTR', 'ASRL/dev/ttyS12::INSTR', 'ASRL/dev/ttyS13::INSTR', 'ASRL/dev/ttyS14::INSTR', 'ASRL/dev/ttyS15::INSTR', 'ASRL/dev/ttyS16::INSTR', 'ASRL/dev/ttyS17::INSTR', 'ASRL/dev/ttyS18::INSTR', 'ASRL/dev/ttyS19::INSTR', 'ASRL/dev/ttyS20::INSTR', 'ASRL/dev/ttyS21::INSTR', 'ASRL/dev/ttyS22::INSTR', 'ASRL/dev/ttyS23::INSTR', 'ASRL/dev/ttyS24::INSTR', 'ASRL/dev/ttyS25::INSTR', 'ASRL/dev/ttyS26::INSTR', 'ASRL/dev/ttyS27::INSTR', 'ASRL/dev/ttyS28::INSTR', 'ASRL/dev/ttyS29::INSTR', 'ASRL/dev/ttyS30::INSTR', 'ASRL/dev/ttyS31::INSTR', 'USB0::1510::8833::4587429::0::INSTR')
+2025-07-08 14:09:22,873 - INFO - Connected to: KEITHLEY INSTRUMENTS,MODEL 2281S-20-6,4587429,01.08b
+2025-07-08 14:09:23,410 - INFO - Instrument initialized
+2025-07-08 14:09:39,825 - INFO - Loaded 1216 data points from keithley_hücre_test2.csv
+2025-07-08 14:09:39,826 - INFO - Profile duration: 1215 seconds
+2025-07-08 14:09:44,112 - INFO - Aggregated 1216 points to 474 segments
+2025-07-08 14:09:44,112 - INFO - Output ON - Starting current profile
+2025-07-08 14:09:44,449 - INFO - Progress: 0.3s | Set: 0.000A | Measured: V=3.700V, I=0.000A
+2025-07-08 14:10:02,349 - INFO - Progress: 18.2s | Set: -0.126A | Measured: V=3.700V, I=-0.126A
+2025-07-08 14:10:30,249 - INFO - Progress: 46.1s | Set: 0.987A | Measured: V=3.700V, I=0.987A
+2025-07-08 14:11:03,150 - INFO - Progress: 79.0s | Set: 0.868A | Measured: V=3.700V, I=0.868A
+2025-07-08 14:11:34,050 - INFO - Progress: 109.9s | Set: 0.728A | Measured: V=3.700V, I=0.728A
+2025-07-08 14:11:49,950 - INFO - Progress: 125.8s | Set: 0.622A | Measured: V=3.700V, I=0.622A
+2025-07-08 14:12:36,851 - INFO - Progress: 172.7s | Set: 0.655A | Measured: V=3.700V, I=0.655A
+2025-07-08 14:13:09,752 - INFO - Progress: 205.6s | Set: 0.406A | Measured: V=3.700V, I=0.406A
+2025-07-08 14:13:33,651 - INFO - Progress: 229.5s | Set: 0.411A | Measured: V=3.700V, I=0.411A
+2025-07-08 14:13:53,552 - INFO - Progress: 249.4s | Set: -0.107A | Measured: V=3.700V, I=-0.107A
+2025-07-08 14:14:24,452 - INFO - Progress: 280.3s | Set: 0.869A | Measured: V=3.700V, I=0.869A
+2025-07-08 14:15:12,373 - INFO - Progress: 328.3s | Set: -0.238A | Measured: V=3.700V, I=-0.238A
+2025-07-08 14:15:33,273 - INFO - Progress: 349.2s | Set: 0.499A | Measured: V=3.700V, I=0.499A
+2025-07-08 14:15:51,173 - INFO - Progress: 367.1s | Set: 0.542A | Measured: V=3.700V, I=0.542A
+2025-07-08 14:16:14,074 - INFO - Progress: 390.0s | Set: 0.492A | Measured: V=3.700V, I=0.492A
+2025-07-08 14:16:30,974 - INFO - Progress: 406.9s | Set: 0.435A | Measured: V=3.700V, I=0.435A
+2025-07-08 14:17:01,884 - INFO - Progress: 437.8s | Set: 0.300A | Measured: V=3.700V, I=0.300A
+2025-07-08 14:17:32,784 - INFO - Progress: 468.7s | Set: 0.635A | Measured: V=3.700V, I=0.635A
+2025-07-08 14:17:53,685 - INFO - Progress: 489.6s | Set: 0.511A | Measured: V=3.700V, I=0.511A
+2025-07-08 14:18:20,585 - INFO - Progress: 516.5s | Set: 0.549A | Measured: V=3.700V, I=0.549A
+2025-07-08 14:19:05,485 - INFO - Progress: 561.4s | Set: 0.221A | Measured: V=3.700V, I=0.221A
+2025-07-08 14:19:26,386 - INFO - Progress: 582.3s | Set: 0.478A | Measured: V=3.700V, I=0.478A
+2025-07-08 14:19:44,286 - INFO - Progress: 600.2s | Set: 0.851A | Measured: V=3.700V, I=0.851A
+2025-07-08 14:20:03,196 - INFO - Progress: 619.1s | Set: 0.620A | Measured: V=3.700V, I=0.620A
+2025-07-08 14:20:29,107 - INFO - Progress: 645.0s | Set: 0.309A | Measured: V=3.700V, I=0.309A
+2025-07-08 14:21:01,007 - INFO - Progress: 676.9s | Set: 0.287A | Measured: V=3.700V, I=0.287A
+2025-07-08 14:21:45,907 - INFO - Progress: 721.8s | Set: 0.496A | Measured: V=3.700V, I=0.496A
+2025-07-08 14:22:01,808 - INFO - Progress: 737.7s | Set: 0.546A | Measured: V=3.700V, I=0.546A
+2025-07-08 14:22:30,708 - INFO - Progress: 766.6s | Set: -0.411A | Measured: V=3.700V, I=-0.411A
+2025-07-08 14:23:00,608 - INFO - Progress: 796.5s | Set: 0.393A | Measured: V=3.700V, I=0.393A
+2025-07-08 14:23:41,508 - INFO - Progress: 837.4s | Set: 0.345A | Measured: V=3.700V, I=0.345A
+2025-07-08 14:24:26,419 - INFO - Progress: 882.3s | Set: 0.202A | Measured: V=3.700V, I=0.202A
+2025-07-08 14:25:01,320 - INFO - Progress: 917.2s | Set: 0.195A | Measured: V=3.700V, I=0.195A
+2025-07-08 14:25:47,220 - INFO - Progress: 963.1s | Set: 0.949A | Measured: V=3.700V, I=0.949A
+2025-07-08 14:26:00,120 - INFO - Progress: 976.0s | Set: 0.904A | Measured: V=3.700V, I=0.904A
+2025-07-08 14:26:18,031 - INFO - Progress: 993.9s | Set: 0.997A | Measured: V=3.700V, I=0.997A
+2025-07-08 14:26:33,931 - INFO - Progress: 1009.8s | Set: 0.914A | Measured: V=3.700V, I=0.914A
+2025-07-08 14:27:03,831 - INFO - Progress: 1039.7s | Set: 0.937A | Measured: V=3.700V, I=0.937A
+2025-07-08 14:27:25,731 - INFO - Progress: 1061.6s | Set: 0.561A | Measured: V=3.700V, I=0.561A
+2025-07-08 14:28:06,632 - INFO - Progress: 1102.5s | Set: 0.545A | Measured: V=3.700V, I=0.545A
+2025-07-08 14:28:29,532 - INFO - Progress: 1125.4s | Set: 0.312A | Measured: V=3.700V, I=0.312A
+2025-07-08 14:29:47,432 - INFO - Progress: 1203.3s | Set: 0.549A | Measured: V=3.700V, I=0.549A
+2025-07-08 14:30:11,333 - INFO - Progress: 1227.2s | Set: 0.491A | Measured: V=3.700V, I=0.491A
+2025-07-08 14:30:26,233 - INFO - Progress: 1242.1s | Set: 0.383A | Measured: V=3.700V, I=0.383A
+2025-07-08 14:30:39,133 - INFO - Progress: 1255.0s | Set: 0.578A | Measured: V=3.700V, I=0.578A
+2025-07-08 14:31:03,034 - INFO - Progress: 1278.9s | Set: 0.647A | Measured: V=3.700V, I=0.647A
+2025-07-08 14:31:37,934 - INFO - Progress: 1313.8s | Set: 0.909A | Measured: V=3.700V, I=0.909A
+2025-07-08 14:31:56,834 - INFO - Progress: 1332.7s | Set: 0.977A | Measured: V=3.700V, I=0.977A
+2025-07-08 14:32:12,704 - INFO - Test completed - Output OFF
+2025-07-08 14:32:12,705 - INFO - Data saved to: data/current_profile_test_20250708_140921.csv
+2025-07-08 14:32:12,706 - INFO - Disconnected from instrument

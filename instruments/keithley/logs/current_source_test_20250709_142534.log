@@ -1,0 +1,33 @@
+2025-07-09 14:25:34,170 - KeithleyCurrentSourcer - INFO - Searching for instrument...
+2025-07-09 14:25:35,729 - pyvisa - ERROR - Unknown attribute 1073676342 (0x3fff0036 - VI_ATTR_SUPPRESS_END_EN)
+Traceback (most recent call last):
+  File "/usr/lib/python3/dist-packages/pyvisa_py/sessions.py", line 669, in get_attribute
+    return self._get_attribute(attribute)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/pyvisa_py/usb.py", line 207, in _get_attribute
+    raise UnknownAttribute(attribute)
+pyvisa_py.sessions.UnknownAttribute: Unknown attribute 1073676342 (0x3fff0036 - VI_ATTR_SUPPRESS_END_EN)
+2025-07-09 14:25:35,731 - KeithleyCurrentSourcer - INFO - Successfully connected to: KEITHLEY INSTRUMENTS,MODEL 2281S-20-6,4587429,01.08b
+2025-07-09 14:25:35,731 - KeithleyCurrentSourcer - INFO - Configuring instrument for current sourcing...
+2025-07-09 14:25:35,747 - KeithleyCurrentSourcer - INFO - Mode set to CURRENT SOURCE with a 4.2V protection limit.
+2025-07-09 14:25:35,747 - KeithleyCurrentSourcer - INFO - Loading profile from 'current_profile_for_sourcing.csv'...
+2025-07-09 14:25:35,752 - KeithleyCurrentSourcer - INFO - Successfully loaded 1216 data points.
+2025-07-09 14:25:46,941 - KeithleyCurrentSourcer - INFO - Test data will be saved to: data/sourcing_test_20250709_142534.csv
+2025-07-09 14:25:46,942 - KeithleyCurrentSourcer - INFO - Starting current profile execution. Turning output ON.
+2025-07-09 14:25:46,944 - pyvisa - ERROR - Unknown attribute 1073676342 (0x3fff0036 - VI_ATTR_SUPPRESS_END_EN)
+Traceback (most recent call last):
+  File "/usr/lib/python3/dist-packages/pyvisa_py/sessions.py", line 669, in get_attribute
+    return self._get_attribute(attribute)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/pyvisa_py/usb.py", line 207, in _get_attribute
+    raise UnknownAttribute(attribute)
+pyvisa_py.sessions.UnknownAttribute: Unknown attribute 1073676342 (0x3fff0036 - VI_ATTR_SUPPRESS_END_EN)
+2025-07-09 14:25:47,031 - KeithleyCurrentSourcer - ERROR - An unexpected error occurred during the test: could not convert string to float: '+0.000000E+00A,+2.547327E+00V,+2.459050E+03s'
+Traceback (most recent call last):
+  File "/home/seymen/lab_instruments/keithley/keithley_current_sourcing.py", line 192, in run_profile
+    measured_voltage = float(self.inst.query('MEAS:VOLT?'))
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: could not convert string to float: '+0.000000E+00A,+2.547327E+00V,+2.459050E+03s'
+2025-07-09 14:25:47,032 - KeithleyCurrentSourcer - INFO - Test finished or aborted. Turning output OFF.
+2025-07-09 14:25:47,033 - KeithleyCurrentSourcer - INFO - Turning output off and disconnecting.
+2025-07-09 14:25:47,034 - KeithleyCurrentSourcer - INFO - Disconnected.

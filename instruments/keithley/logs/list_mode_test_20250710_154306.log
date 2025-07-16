@@ -1,0 +1,44 @@
+2025-07-10 15:43:06,591 - INFO - Cihaz aranıyor...
+2025-07-10 15:43:06,984 - INFO - Bağlandı: KEITHLEY INSTRUMENTS,MODEL 2281S-20-6,4587429,01.08b
+2025-07-10 15:43:06,987 - INFO - Profil yüklendi: /home/seymen/lab_instruments/keithley/current_profile_for_sourcing.csv (24 nokta)
+2025-07-10 15:43:06,988 - INFO - Tüm adımlar için sabit bekleme süresi tespit edildi: 1.0 s
+2025-07-10 15:43:06,988 - INFO - Cihaz LIST modu için ayarlanıyor...
+2025-07-10 15:43:06,989 - INFO - DEBUG - Sistem reset | Komut gönderildi: *RST
+2025-07-10 15:43:08,990 - INFO - DEBUG - Hata temizleme | Komut gönderildi: *CLS
+2025-07-10 15:43:08,990 - INFO - DEBUG - Cihaz durumu kontrol ediliyor...
+2025-07-10 15:43:08,993 - INFO - DEBUG - Sistem hatası kontrolü | Komut: :SYST:ERR? | Sonuç: 0,"No error"
+2025-07-10 15:43:08,995 - INFO - DEBUG - Operasyon durumu | Komut: :STAT:OPER? | Sonuç: 0
+2025-07-10 15:43:09,000 - INFO - DEBUG - Çıkış durumu | Komut: :OUTP? | Sonuç: 0
+2025-07-10 15:43:09,001 - INFO - DEBUG - Akım kaynağı modu | Komut gönderildi: :SOUR:FUNC CURR
+2025-07-10 15:44:10,011 - ERROR - DEBUG - Mevcut kaynak modu | Komut: :SOUR:FUNC? | HATA: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-10 15:45:11,018 - ERROR - DEBUG - Mevcut akım modu | Komut: :SOUR:CURR:MODE? | HATA: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-10 15:45:11,019 - INFO - DEBUG - LIST modu ayarı | Komut gönderildi: :SOUR:CURR:MODE LIST
+2025-07-10 15:46:12,026 - ERROR - DEBUG - LIST modu doğrulama | Komut: :SOUR:CURR:MODE? | HATA: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-10 15:46:12,026 - INFO - Mod: LIST (Akım Listesi) - Doğrulama: None
+2025-07-10 15:46:12,027 - INFO - DEBUG - Voltaj koruma ayarı | Komut gönderildi: :SOUR:VOLT:PROT 4.2
+2025-07-10 15:46:12,027 - INFO - DEBUG - Akım koruma ayarı | Komut gönderildi: :CURR:PROT 1.2
+2025-07-10 15:46:12,032 - INFO - DEBUG - Voltaj koruma doğrulama | Komut: :SOUR:VOLT:PROT? | Sonuç: 4.2
+2025-07-10 15:46:12,034 - INFO - DEBUG - Akım koruma doğrulama | Komut: :CURR:PROT? | Sonuç: 1.20
+2025-07-10 15:46:12,034 - INFO - Güvenlik limitleri ayarlandı: Voltaj <= 4.2V, Akım <= 1.20A
+2025-07-10 15:46:12,034 - INFO - TRACE belleği 24 nokta için hazırlanıyor...
+2025-07-10 15:46:12,037 - INFO - DEBUG - TRACE destek kontrolü | Komut: :TRAC:POIN? | Sonuç: 2500
+2025-07-10 15:46:12,038 - INFO - DEBUG - TRACE bellek temizleme | Komut gönderildi: :TRAC:CLE
+2025-07-10 15:46:12,539 - INFO - DEBUG - TRACE bellek boyutu | Komut gönderildi: :TRAC:POIN 24
+2025-07-10 15:46:12,540 - INFO - DEBUG - TRACE veri kaynağı | Komut gönderildi: :TRAC:FEED SENS
+2025-07-10 15:46:12,540 - INFO - DEBUG - TRACE tetikleme modu | Komut gönderildi: :TRAC:FEED:CONT NEXT
+2025-07-10 15:46:12,550 - INFO - DEBUG - TRACE nokta sayısı doğrulama | Komut: :TRAC:POIN? | Sonuç: 24
+2025-07-10 15:46:12,555 - INFO - DEBUG - TRACE veri kaynağı doğrulama | Komut: :TRAC:FEED? | Sonuç: SENS
+2025-07-10 15:46:12,555 - INFO - Cihaz ayarları tamamlandı.
+2025-07-10 15:46:12,556 - INFO - DEBUG - Cihaz durumu kontrol ediliyor...
+2025-07-10 15:46:12,560 - INFO - DEBUG - Sistem hatası kontrolü | Komut: :SYST:ERR? | Sonuç: -113,"Undefined header;  - :SOUR:FUNC "
+2025-07-10 15:46:12,565 - INFO - DEBUG - Operasyon durumu | Komut: :STAT:OPER? | Sonuç: 0
+2025-07-10 15:46:12,568 - INFO - DEBUG - Çıkış durumu | Komut: :OUTP? | Sonuç: 0
+2025-07-10 15:46:12,569 - INFO - Kullanıcı mantığı (Pozitif=Deşarj) cihaz mantığına (Negatif=Deşarj) çevriliyor...
+2025-07-10 15:46:12,569 - INFO - DEBUG - Gönderilecek akım listesi: -0.0,-0.2,-0.4,-0.6,-0.8,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-0.8,-0.6,-0.4,-0.2,-0.1,0.2,0.4,0.6,0.8,1.0,...
+2025-07-10 15:46:12,570 - INFO - DEBUG - Akım listesi yükleme | Komut gönderildi: :SOUR:LIST:CURR -0.0,-0.2,-0.4,-0.6,-0.8,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-0.8,-0.6,-0.4,-0.2,-0.1,0.2,0.4,0.6,0.8,1.0,0.5,-0.2,-0.4
+2025-07-10 15:47:13,580 - ERROR - DEBUG - Akım listesi doğrulama | Komut: :SOUR:LIST:CURR? | HATA: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-10 15:47:13,581 - INFO - 24 adımlık akım listesi cihaza yüklendi.
+2025-07-10 15:47:13,581 - INFO - DEBUG - Bekleme süresi ayarı | Komut gönderildi: :SOUR:LIST:DWEL 1.0
+2025-07-10 15:48:13,584 - WARNING - Test kullanıcı tarafından durduruldu.
+2025-07-10 15:48:13,584 - INFO - Test sonlandırılıyor. Cihaz güvenli duruma getiriliyor.
+2025-07-10 15:48:14,585 - ERROR - Cihaz kapatılırken hata: [Errno 110] Operation timed out

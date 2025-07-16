@@ -1,0 +1,29 @@
+2025-07-09 14:52:02,019 - KeithleyCurrentSourcer - INFO - Searching for instrument...
+2025-07-09 14:52:03,459 - pyvisa - ERROR - Unknown attribute 1073676342 (0x3fff0036 - VI_ATTR_SUPPRESS_END_EN)
+Traceback (most recent call last):
+  File "/usr/lib/python3/dist-packages/pyvisa_py/sessions.py", line 669, in get_attribute
+    return self._get_attribute(attribute)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/pyvisa_py/usb.py", line 207, in _get_attribute
+    raise UnknownAttribute(attribute)
+pyvisa_py.sessions.UnknownAttribute: Unknown attribute 1073676342 (0x3fff0036 - VI_ATTR_SUPPRESS_END_EN)
+2025-07-09 14:52:03,460 - KeithleyCurrentSourcer - INFO - Successfully connected to: KEITHLEY INSTRUMENTS,MODEL 2281S-20-6,4587429,01.08b
+2025-07-09 14:52:03,460 - KeithleyCurrentSourcer - INFO - Configuring instrument for current sourcing...
+2025-07-09 14:52:03,468 - KeithleyCurrentSourcer - INFO - Mode set to CURRENT SOURCE with a 4.2V protection limit.
+2025-07-09 14:52:03,468 - KeithleyCurrentSourcer - INFO - Loading profile from 'current_profile_for_sourcing.csv'...
+2025-07-09 14:52:03,471 - KeithleyCurrentSourcer - INFO - Successfully loaded 1216 data points.
+2025-07-09 14:52:07,700 - KeithleyCurrentSourcer - INFO - Test data will be saved to: data/sourcing_test_20250709_145202.csv
+2025-07-09 14:52:07,700 - KeithleyCurrentSourcer - INFO - Starting current profile execution. Turning output ON.
+2025-07-09 14:52:07,702 - pyvisa - ERROR - Unknown attribute 1073676342 (0x3fff0036 - VI_ATTR_SUPPRESS_END_EN)
+Traceback (most recent call last):
+  File "/usr/lib/python3/dist-packages/pyvisa_py/sessions.py", line 669, in get_attribute
+    return self._get_attribute(attribute)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/pyvisa_py/usb.py", line 207, in _get_attribute
+    raise UnknownAttribute(attribute)
+pyvisa_py.sessions.UnknownAttribute: Unknown attribute 1073676342 (0x3fff0036 - VI_ATTR_SUPPRESS_END_EN)
+2025-07-09 14:52:18,712 - KeithleyCurrentSourcer - ERROR - Communication error during profile execution: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-09 14:52:18,712 - KeithleyCurrentSourcer - ERROR - Test aborted due to communication failure.
+2025-07-09 14:52:18,713 - KeithleyCurrentSourcer - INFO - Test finished or aborted. Turning output OFF.
+2025-07-09 14:52:18,713 - KeithleyCurrentSourcer - INFO - Turning output off and disconnecting.
+2025-07-09 14:52:18,715 - KeithleyCurrentSourcer - INFO - Disconnected.
