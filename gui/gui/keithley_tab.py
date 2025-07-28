@@ -188,6 +188,7 @@ class KeithleyTab(DeviceTab):
                 if success:
                     self.mode_status_label.config(text="Mode: Battery Test", foreground="blue")
                     mode_switched = True
+                    print("Battery Test mode: Using BATT:TEST commands for current/voltage control")
                 else:
                     raise Exception("Failed to switch to Battery Test mode")
                     

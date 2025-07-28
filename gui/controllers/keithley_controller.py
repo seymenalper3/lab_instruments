@@ -24,30 +24,62 @@ class KeithleyController(BaseDeviceController):
         self.mode_switch_delay = 3.0  # Delay after mode switch (seconds)
         
     def set_voltage(self, voltage: float):
-        """Set output voltage in volts"""
+        """Set output voltage in volts - mode dependent"""
         if voltage < 0 or voltage > self.device_spec.max_voltage:
             raise ValueError(f"Voltage must be between 0 and {self.device_spec.max_voltage}V")
-            
-        cmd = self.device_spec.default_commands['set_voltage'].format(voltage)
-        self.send_command(cmd)
+        
+        # Use different commands based on current mode
+        if self.current_mode == 'test':
+            # In Battery Test mode, voltage setting is more complex
+            # For discharge, we typically set end voltage
+            print(f"Setting Battery Test end voltage to {voltage}V")
+            self.send_command(f':BATT:TEST:VOLT {voltage}')
+            # Also set discharge current as voltage control is different in battery test
+            print("Note: In Battery Test mode, current control is primary")
+        else:
+            # Power Supply mode
+            cmd = self.device_spec.default_commands['set_voltage'].format(voltage)
+            self.send_command(cmd)
         
     def set_current_limit(self, current: float):
-        """Set current limit in amperes"""
+        """Set current limit in amperes - mode dependent"""
         if current < 0 or current > self.device_spec.max_current:
             raise ValueError(f"Current must be between 0 and {self.device_spec.max_current}A")
-            
-        cmd = self.device_spec.default_commands['set_current'].format(current)
-        self.send_command(cmd)
+        
+        # Use different commands based on current mode
+        if self.current_mode == 'test':
+            # In Battery Test mode, use battery-specific commands
+            print(f"Setting Battery Test current to {current}A")
+            self.send_command(f':BATT:TEST:CURR:LIM:SOUR {current}')
+            self.send_command(f':BATT:TEST:CURR:END {current}')
+            # Set discharge mode if current is positive (for load testing)
+            self.send_command(':BATT:TEST:MODE DIS')
+        else:
+            # Power Supply mode
+            cmd = self.device_spec.default_commands['set_current'].format(current)
+            self.send_command(cmd)
         
     def output_on(self):
-        """Turn output on"""
-        cmd = self.device_spec.default_commands['output_on']
-        self.send_command(cmd)
+        """Turn output on - mode dependent"""
+        if self.current_mode == 'test':
+            # In Battery Test mode, use battery output
+            print("Turning on Battery Test output")
+            self.send_command(':BATT:OUTP ON')
+        else:
+            # Power Supply mode
+            cmd = self.device_spec.default_commands['output_on']
+            self.send_command(cmd)
         
     def output_off(self):
-        """Turn output off"""
-        cmd = self.device_spec.default_commands['output_off']
-        self.send_command(cmd)
+        """Turn output off - mode dependent"""
+        if self.current_mode == 'test':
+            # In Battery Test mode, use battery output
+            print("Turning off Battery Test output")
+            self.send_command(':BATT:OUTP OFF')
+        else:
+            # Power Supply mode
+            cmd = self.device_spec.default_commands['output_off']
+            self.send_command(cmd)
         
     def battery_test_mode(self):
         """Switch to battery test function"""
@@ -150,6 +182,13 @@ class KeithleyController(BaseDeviceController):
             # Switch to Battery Test mode
             self.send_command(self.device_spec.default_commands['battery_test_mode'])
             time.sleep(self.mode_switch_delay)
+            
+            # Configure Battery Test mode defaults
+            try:
+                self.send_command(':BATT:TEST:MODE DIS')  # Set to discharge mode
+                print("Battery Test mode configured for discharge")
+            except Exception as e:
+                print(f"Warning: Could not configure Battery Test defaults: {e}")
             
             # Verify mode switch with retries
             for attempt in range(3):
