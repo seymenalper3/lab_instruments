@@ -20,13 +20,17 @@ class KeithleyTab(DeviceTab):
         
     def create_controls(self):
         """Create Keithley-specific controls"""
-        # Function selection
-        ttk.Label(self.control_frame, text="Function:").grid(row=0, column=0, sticky='w', padx=5, pady=2)
+        # Function selection with mode switching
+        ttk.Label(self.control_frame, text="Function/Mode:").grid(row=0, column=0, sticky='w', padx=5, pady=2)
         self.function_combo = ttk.Combobox(self.control_frame, 
                                          values=["Power Supply", "Battery Test", "Battery Simulator"],
                                          state="readonly")
         self.function_combo.grid(row=0, column=1, padx=5, pady=2)
         self.function_combo.set("Power Supply")
+        
+        # Status label to show current mode
+        self.mode_status_label = ttk.Label(self.control_frame, text="Mode: Not Set", foreground="gray")
+        self.mode_status_label.grid(row=0, column=2, columnspan=2, sticky='w', padx=10, pady=2)
         
         # Voltage setting
         ttk.Label(self.control_frame, text="Voltage (V):").grid(row=1, column=0, sticky='w', padx=5, pady=2)
@@ -44,26 +48,16 @@ class KeithleyTab(DeviceTab):
         btn_frame = ttk.Frame(self.control_frame)
         btn_frame.grid(row=2, column=0, columnspan=4, pady=10)
         
-        ttk.Button(btn_frame, text="Set Parameters", 
+        ttk.Button(btn_frame, text="Set Parameters & Mode", 
                   command=self.set_parameters).pack(side='left', padx=5)
         ttk.Button(btn_frame, text="Output ON", 
                   command=self.output_on).pack(side='left', padx=5)
         ttk.Button(btn_frame, text="Output OFF", 
                   command=self.output_off).pack(side='left', padx=5)
         
-        # Mode switching buttons
-        mode_frame = ttk.Frame(self.control_frame)
-        mode_frame.grid(row=3, column=0, columnspan=4, pady=5)
-        
-        ttk.Label(mode_frame, text="Mode Control:").pack(side='left', padx=5)
-        ttk.Button(mode_frame, text="Power Supply Mode", 
-                  command=self.switch_to_power_mode).pack(side='left', padx=5)
-        ttk.Button(mode_frame, text="Battery Test Mode", 
-                  command=self.switch_to_battery_mode).pack(side='left', padx=5)
-        
         # Test buttons
         test_frame = ttk.Frame(self.control_frame)
-        test_frame.grid(row=4, column=0, columnspan=4, pady=5)
+        test_frame.grid(row=3, column=0, columnspan=4, pady=5)
         
         ttk.Button(test_frame, text="Run Pulse Test", 
                   command=self.run_pulse_test).pack(side='left', padx=5)
@@ -74,7 +68,7 @@ class KeithleyTab(DeviceTab):
                   
         # Current Profile parameters frame
         profile_frame = ttk.LabelFrame(self.control_frame, text="Current Profile Parameters")
-        profile_frame.grid(row=5, column=0, columnspan=4, sticky='ew', padx=5, pady=5)
+        profile_frame.grid(row=4, column=0, columnspan=4, sticky='ew', padx=5, pady=5)
         
         ttk.Label(profile_frame, text="Profile File:").grid(row=0, column=0, sticky='w', padx=5, pady=2)
         self.profile_file_var = tk.StringVar()
@@ -95,7 +89,7 @@ class KeithleyTab(DeviceTab):
         
         # Pulse test parameters frame
         pulse_frame = ttk.LabelFrame(self.control_frame, text="Pulse Test Parameters")
-        pulse_frame.grid(row=6, column=0, columnspan=4, sticky='ew', padx=5, pady=5)
+        pulse_frame.grid(row=5, column=0, columnspan=4, sticky='ew', padx=5, pady=5)
         
         ttk.Label(pulse_frame, text="Pulses:").grid(row=0, column=0, sticky='w', padx=5, pady=2)
         self.pulses_entry = ttk.Entry(pulse_frame, width=8)
@@ -119,7 +113,7 @@ class KeithleyTab(DeviceTab):
         
         # Battery model parameters frame
         model_frame = ttk.LabelFrame(self.control_frame, text="Battery Model Parameters")
-        model_frame.grid(row=7, column=0, columnspan=4, sticky='ew', padx=5, pady=5)
+        model_frame.grid(row=6, column=0, columnspan=4, sticky='ew', padx=5, pady=5)
         
         # Discharge parameters
         ttk.Label(model_frame, text="Discharge End Voltage (V):").grid(row=0, column=0, sticky='w', padx=5, pady=2)
@@ -171,20 +165,48 @@ class KeithleyTab(DeviceTab):
                        variable=self.export_csv_var).grid(row=4, column=0, columnspan=2, sticky='w', padx=5, pady=5)
                   
     def set_parameters(self):
-        """Set voltage and current parameters"""
+        """Set voltage and current parameters with automatic mode switching"""
         def _set_params():
             voltage = float(self.voltage_entry.get())
             current = float(self.current_entry.get())
             
-            # Switch function if needed
+            # Get selected function and switch mode accordingly
             func = self.function_combo.get()
-            if func == "Battery Test":
-                self.controller.battery_test_mode()
+            mode_switched = False
             
+            if func == "Power Supply":
+                success = self.controller.switch_to_power_supply_mode()
+                if success:
+                    self.mode_status_label.config(text="Mode: Power Supply", foreground="green")
+                    mode_switched = True
+                else:
+                    raise Exception("Failed to switch to Power Supply mode")
+                    
+            elif func == "Battery Test":
+                success = self.controller.switch_to_battery_test_mode()
+                if success:
+                    self.mode_status_label.config(text="Mode: Battery Test", foreground="blue")
+                    mode_switched = True
+                else:
+                    raise Exception("Failed to switch to Battery Test mode")
+                    
+            elif func == "Battery Simulator":
+                # For Battery Simulator mode, we can use Power Supply mode as base
+                success = self.controller.switch_to_power_supply_mode()
+                if success:
+                    self.mode_status_label.config(text="Mode: Battery Simulator", foreground="orange")
+                    mode_switched = True
+                else:
+                    raise Exception("Failed to switch to Battery Simulator mode")
+            
+            # Set voltage and current parameters
             self.controller.set_voltage(voltage)
             self.controller.set_current_limit(current)
             
-            return "Parameters set successfully"
+            if mode_switched:
+                return f"Mode switched to {func} and parameters set successfully"
+            else:
+                return "Parameters set successfully"
             
         result = self.safe_execute(_set_params)
         if result:
@@ -207,32 +229,6 @@ class KeithleyTab(DeviceTab):
             return "Output turned OFF"
             
         result = self.safe_execute(_output_off)
-        if result:
-            messagebox.showinfo("Success", result)
-    
-    def switch_to_power_mode(self):
-        """Switch to Power Supply mode"""
-        def _switch_power():
-            success = self.controller.switch_to_power_supply_mode()
-            if success:
-                return "Switched to Power Supply mode"
-            else:
-                raise Exception("Failed to switch to Power Supply mode")
-                
-        result = self.safe_execute(_switch_power)
-        if result:
-            messagebox.showinfo("Success", result)
-    
-    def switch_to_battery_mode(self):
-        """Switch to Battery Test mode"""
-        def _switch_battery():
-            success = self.controller.switch_to_battery_test_mode()
-            if success:
-                return "Switched to Battery Test mode"
-            else:
-                raise Exception("Failed to switch to Battery Test mode")
-                
-        result = self.safe_execute(_switch_battery)
         if result:
             messagebox.showinfo("Success", result)
     
