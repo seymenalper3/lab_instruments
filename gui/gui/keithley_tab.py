@@ -10,6 +10,7 @@ from models.device_config import DEVICE_SPECS, DeviceType
 from controllers.keithley_controller import KeithleyController
 import threading
 from pathlib import Path
+import pandas as pd
 
 
 class KeithleyTab(DeviceTab):
@@ -482,13 +483,13 @@ class KeithleyTab(DeviceTab):
             
             # Estimate duration by loading profile
             try:
-                import pandas as pd
                 df = pd.read_csv(profile_path)
-                if 'time_s' in df.columns:
-                    total_time = df['time_s'].max() if len(df) > 0 else 0
+                if 'time_s' in df.columns and len(df) > 0:
+                    total_time = df['time_s'].max()
                 else:
                     total_time = len(df) * 10  # Rough estimate
-            except:
+            except Exception as e:
+                print(f"Warning: Could not estimate duration: {e}")
                 total_time = 300  # Default estimate
             
             # Confirm profile execution

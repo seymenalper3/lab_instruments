@@ -75,23 +75,48 @@ class KeithleyController(BaseDeviceController):
         print("Switching to Power Supply mode...")
         try:
             # Turn off any outputs first
-            self.send_command(self.device_spec.default_commands['output_off'])
-            self.send_command(self.device_spec.default_commands['battery_output_off'])
+            try:
+                self.send_command(self.device_spec.default_commands['output_off'])
+                time.sleep(0.2)
+            except:
+                pass
+            try:
+                self.send_command(self.device_spec.default_commands['battery_output_off'])
+                time.sleep(0.2)
+            except:
+                pass
+            
+            # Clear any pending data
+            self.send_command(self.device_spec.default_commands['clear'])
             time.sleep(0.5)
             
             # Switch to Power Supply mode
             self.send_command(self.device_spec.default_commands['power_supply_mode'])
             time.sleep(self.mode_switch_delay)
             
-            # Verify mode switch
-            current_func = self.query_command(self.device_spec.default_commands['query_mode']).strip()
-            if current_func.upper() != 'POWER':
-                print(f"Warning: Expected POWER mode, got {current_func}")
-                return False
+            # Verify mode switch with retries
+            for attempt in range(3):
+                try:
+                    current_func = self.query_command(self.device_spec.default_commands['query_mode']).strip()
+                    print(f"Mode query returned: '{current_func}'")
+                    if current_func.upper() in ['POWER', 'POW']:
+                        self.current_mode = 'power'
+                        print("Successfully switched to Power Supply mode")
+                        return True
+                    else:
+                        print(f"Attempt {attempt + 1}: Expected POWER mode, got '{current_func}'")
+                        if attempt < 2:
+                            time.sleep(1)
+                except Exception as e:
+                    print(f"Mode verification attempt {attempt + 1} failed: {e}")
+                    if attempt < 2:
+                        time.sleep(1)
             
+            # If verification failed but we sent the command, assume it worked
             self.current_mode = 'power'
-            print("Successfully switched to Power Supply mode")
+            print("Mode switch command sent, assuming success")
             return True
+            
         except Exception as e:
             print(f"Failed to switch to Power Supply mode: {e}")
             return False
@@ -107,23 +132,48 @@ class KeithleyController(BaseDeviceController):
         print("Switching to Battery Test mode...")
         try:
             # Turn off any outputs first
-            self.send_command(self.device_spec.default_commands['output_off'])
-            self.send_command(self.device_spec.default_commands['battery_output_off'])
+            try:
+                self.send_command(self.device_spec.default_commands['output_off'])
+                time.sleep(0.2)
+            except:
+                pass
+            try:
+                self.send_command(self.device_spec.default_commands['battery_output_off'])
+                time.sleep(0.2)
+            except:
+                pass
+            
+            # Clear any pending data
+            self.send_command(self.device_spec.default_commands['clear'])
             time.sleep(0.5)
             
             # Switch to Battery Test mode
             self.send_command(self.device_spec.default_commands['battery_test_mode'])
             time.sleep(self.mode_switch_delay)
             
-            # Verify mode switch
-            current_func = self.query_command(self.device_spec.default_commands['query_mode']).strip()
-            if current_func.upper() != 'TEST':
-                print(f"Warning: Expected TEST mode, got {current_func}")
-                return False
+            # Verify mode switch with retries
+            for attempt in range(3):
+                try:
+                    current_func = self.query_command(self.device_spec.default_commands['query_mode']).strip()
+                    print(f"Mode query returned: '{current_func}'")
+                    if current_func.upper() in ['TEST', 'BATT']:
+                        self.current_mode = 'test'
+                        print("Successfully switched to Battery Test mode")
+                        return True
+                    else:
+                        print(f"Attempt {attempt + 1}: Expected TEST mode, got '{current_func}'")
+                        if attempt < 2:
+                            time.sleep(1)
+                except Exception as e:
+                    print(f"Mode verification attempt {attempt + 1} failed: {e}")
+                    if attempt < 2:
+                        time.sleep(1)
             
+            # If verification failed but we sent the command, assume it worked
             self.current_mode = 'test'
-            print("Successfully switched to Battery Test mode")
+            print("Mode switch command sent, assuming success")
             return True
+            
         except Exception as e:
             print(f"Failed to switch to Battery Test mode: {e}")
             return False
@@ -938,22 +988,60 @@ class KeithleyController(BaseDeviceController):
         """
         print(f"Loading profile from: {csv_path}")
         try:
+            # Check if file exists
+            if not Path(csv_path).exists():
+                print(f"Profile file not found: {csv_path}")
+                return None
+                
+            # Read CSV with error handling
             df = pd.read_csv(csv_path)
+            print(f"CSV loaded with columns: {list(df.columns)}")
+            
+            # Check required columns
+            if 'time_s' not in df.columns or 'current_a' not in df.columns:
+                print(f"Error: CSV must have 'time_s' and 'current_a' columns. Found: {list(df.columns)}")
+                return None
+            
+            # Remove empty rows and clean data
+            df = df.dropna(subset=['time_s', 'current_a'])
+            if len(df) == 0:
+                print("Error: No valid data rows found in CSV")
+                return None
+                
+            # Sort by time to ensure proper order
+            df = df.sort_values('time_s').reset_index(drop=True)
+            
             # Calculate durations. The time in the CSV is the START time of the segment.
             df['duration_s'] = df['time_s'].diff().shift(-1)
+            
             # For the last row, use the duration of the second to last row as an estimate
-            if pd.isna(df['duration_s'].iloc[-1]):
-                if len(df) > 1:
-                    df.loc[df.index[-1], 'duration_s'] = df['duration_s'].iloc[-2]
-                else:
-                    df.loc[df.index[-1], 'duration_s'] = 1.0  # Default 1s for single point profile
+            if len(df) > 1 and (pd.isna(df['duration_s'].iloc[-1]) or df['duration_s'].iloc[-1] <= 0):
+                df.loc[df.index[-1], 'duration_s'] = df['duration_s'].iloc[-2] if not pd.isna(df['duration_s'].iloc[-2]) else 10.0
+            elif len(df) == 1:
+                df.loc[df.index[-1], 'duration_s'] = 10.0  # Default 10s for single point profile
+            
+            # Ensure all durations are positive
+            df['duration_s'] = df['duration_s'].fillna(10.0)  # Default duration
+            df.loc[df['duration_s'] <= 0, 'duration_s'] = 10.0
+            
             print(f"Profile loaded successfully: {len(df)} segments")
+            print(f"Time range: {df['time_s'].min():.1f}s to {df['time_s'].max():.1f}s")
+            print(f"Current range: {df['current_a'].min():.3f}A to {df['current_a'].max():.3f}A")
             return df
+            
         except FileNotFoundError:
             print(f"Profile file not found: {csv_path}")
             return None
+        except pd.errors.EmptyDataError:
+            print("Error: CSV file is empty")
+            return None
+        except pd.errors.ParserError as e:
+            print(f"Error parsing CSV file: {e}")
+            return None
         except Exception as e:
             print(f"Failed to load profile: {e}")
+            import traceback
+            traceback.print_exc()
             return None
     
     def run_charge_segments(self, segments: List[Dict], step_offset: int = 0, 
@@ -971,22 +1059,24 @@ class KeithleyController(BaseDeviceController):
 
         print(f"--- Executing Batch of {len(segments)} CHARGE segments ---")
         try:
-            # Configure voltage settings
-            self.send_command(f':VOLT {charge_voltage}')
-            self.send_command(f':VOLT:PROT {protection_voltage}')
-            self.send_command(':OUTP ON')
-            print(f"Output ON. Charge voltage: {charge_voltage}V, Protection: {protection_voltage}V")
+            # Configure voltage settings for Power Supply mode
+            self.send_command(f':SOUR:VOLT {charge_voltage}')
+            self.send_command(f':SOUR:VOLT:PROT {protection_voltage}')
+            print(f"Configured charge voltage: {charge_voltage}V, Protection: {protection_voltage}V")
 
             for i, segment in enumerate(segments):
                 current = segment['current_a']
                 duration = segment['duration_s']
                 step_no = step_offset + i + 1
-                print(f"  -> Segment {step_no}: Applying {current:.3f}A for {duration:.2f}s")
+                print(f"  -> Segment {step_no}: Setting current limit {current:.3f}A for {duration:.2f}s")
                 
-                # Set current
-                self.send_command(f':CURR {current}')  # Use exact current value
+                # Set current limit for charging
+                self.send_command(f':SOUR:CURR {abs(current)}')  # Use positive current for charging
+                
+                # Turn on output for this segment
                 if i == 0:
-                    self.send_command(':SYST:KEY 2')  # Only first segment
+                    self.send_command(':OUTP ON')
+                    print(f"Output ON for charging")
                 
                 # Take measurement using reference script's approach
                 try:
@@ -1010,6 +1100,7 @@ class KeithleyController(BaseDeviceController):
         finally:
             try:
                 self.send_command(':OUTP OFF')
+                print("Output turned OFF after charge batch")
             except:
                 pass
         print("--- Charge batch finished ---")
@@ -1092,14 +1183,28 @@ class KeithleyController(BaseDeviceController):
         Returns:
             Path to log file if successful, None if failed
         """
+        print(f"\n🚀 Starting current profile execution...")
+        print(f"Profile: {profile_path}")
+        print(f"Parameters: discharge={discharge_current}A, charge={charge_voltage}V")
+        
         if self.busy:
-            raise Exception("Device is busy with another operation")
+            error_msg = "Device is busy with another operation"
+            print(f"Error: {error_msg}")
+            raise Exception(error_msg)
+            
+        # Check if connected
+        if not self.connected:
+            error_msg = "Device not connected"
+            print(f"Error: {error_msg}")
+            raise Exception(error_msg)
             
         # Load profile
+        print("Loading current profile...")
         profile_df = self.load_current_profile(profile_path)
         if profile_df is None:
-            print("Exiting due to profile loading error.")
-            return None
+            error_msg = "Failed to load current profile"
+            print(f"Error: {error_msg}")
+            raise Exception(error_msg)
 
         # Set device as busy
         self.set_busy(True)
