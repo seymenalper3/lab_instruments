@@ -397,6 +397,49 @@ class KeithleyController(BaseDeviceController):
         except:
             pass
         return None
+    
+    def get_measurements(self) -> 'MeasurementData':
+        """
+        Get all measurements as structured data - enhanced for mode-dependent operation
+        """
+        from datetime import datetime
+        from models.device_config import MeasurementData
+        
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+        
+        try:
+            # Use our enhanced measurement functions
+            if self.current_mode == 'test':
+                # In Battery Test mode, try buffer method first
+                voltage, current, _ = self.measure_battery_data_buffer()
+                if voltage is None or current is None:
+                    # Fallback to combined measurement
+                    voltage, current = self.measure_voltage_current_combined()
+            else:
+                # In Power Supply mode, use combined measurement
+                voltage, current = self.measure_voltage_current_combined()
+            
+            # Calculate power if we have both values
+            power = None
+            if voltage is not None and current is not None:
+                power = voltage * current
+                
+            return MeasurementData(
+                timestamp=timestamp,
+                voltage=voltage,
+                current=current, 
+                power=power
+            )
+            
+        except Exception as e:
+            print(f"Error getting measurements: {e}")
+            # Return empty measurement data on error
+            return MeasurementData(
+                timestamp=timestamp,
+                voltage=None,
+                current=None,
+                power=None
+            )
         
     def run_pulse_test(self, pulses: int = 5, 
                       pulse_time: float = 60.0, 

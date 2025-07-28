@@ -76,11 +76,30 @@ class DataLogger:
                             data_point[f'{device_name}_busy'] = True
                         else:
                             try:
+                                # Get measurements with timeout protection
                                 measurements = controller.get_measurements()
-                                data_point[f'{device_name}_voltage'] = measurements.voltage
-                                data_point[f'{device_name}_current'] = measurements.current
-                                data_point[f'{device_name}_power'] = measurements.power
+                                
+                                # Validate measurements
+                                voltage = measurements.voltage if measurements.voltage is not None else None
+                                current = measurements.current if measurements.current is not None else None
+                                power = measurements.power if measurements.power is not None else None
+                                
+                                data_point[f'{device_name}_voltage'] = voltage
+                                data_point[f'{device_name}_current'] = current
+                                data_point[f'{device_name}_power'] = power
                                 data_point[f'{device_name}_busy'] = False
+                                
+                                # Add device mode info if available
+                                if hasattr(controller, 'current_mode'):
+                                    data_point[f'{device_name}_mode'] = controller.current_mode
+                                
+                                # Debug output for successful measurements  
+                                if voltage is not None or current is not None:
+                                    mode_info = f" ({controller.current_mode})" if hasattr(controller, 'current_mode') and controller.current_mode else ""
+                                    # Only print occasionally to avoid spam
+                                    if int(time.time()) % 5 == 0:  # Every 5 seconds
+                                        print(f"Monitoring {device_name}{mode_info}: V={voltage:.3f}V I={current:.3f}A" if voltage and current else f"Monitoring {device_name}{mode_info}: Getting measurements...")
+                                        
                             except Exception as e:
                                 print(f"Error reading from {device_name}: {e}")
                                 data_point[f'{device_name}_voltage'] = None
