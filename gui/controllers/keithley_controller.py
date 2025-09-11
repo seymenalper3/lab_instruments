@@ -123,7 +123,9 @@ class KeithleyController(BaseDeviceController):
             time.sleep(0.5)
             
             # Switch to Power Supply mode
+            print("Sending Power Supply mode command...")
             self.send_command(self.device_spec.default_commands['power_supply_mode'])
+            print("Waiting for mode switch to complete...")
             time.sleep(self.mode_switch_delay)
             
             # Verify mode switch with retries
@@ -180,7 +182,9 @@ class KeithleyController(BaseDeviceController):
             time.sleep(0.5)
             
             # Switch to Battery Test mode
+            print("Sending Battery Test mode command...")
             self.send_command(self.device_spec.default_commands['battery_test_mode'])
+            print("Waiting for mode switch to complete...")
             time.sleep(self.mode_switch_delay)
             
             # Configure Battery Test mode defaults
@@ -448,11 +452,18 @@ class KeithleyController(BaseDeviceController):
                       i_rest: float = 0.0001,
                       sample_interval: float = 0.5) -> tuple:
         """
-        Run battery pulse test with fixes for ethernet and current setting
+        Run battery pulse test, with a check to prevent running over Ethernet.
         """
         if not self.connected:
             raise Exception("Device not connected")
         
+        # Check for Ethernet connection and prevent test run
+        if self.is_ethernet_connection():
+            raise Exception(
+                "Pulse test data logging is not supported over Ethernet due to instrument limitations. "
+                "Please use a USB connection for this test."
+            )
+            
         if self.busy:
             raise Exception("Device is busy with another operation")
             
@@ -470,175 +481,56 @@ class KeithleyController(BaseDeviceController):
             if i_pulse < 0.001 or i_pulse > self.device_spec.max_current:
                 raise ValueError(f"Pulse current must be between 0.001 and {self.device_spec.max_current}A")
             
-            # Test parameters
-            RAMP_UP = [0.05, 0.20]
-            RAMP_DN = [0.20, 0.05]
+            # Test parameters - simplified for Keithley 2281S Battery Test mode
+            # Note: Keithley 2281S can only discharge at ~1A, no variable discharge current
+            I_PULSE, I_REST = i_pulse, i_rest
+            # Use same timing as working script for all connections
             STEP = 0.5
             EVOC_DLY = 0.05
             
             # Determine if ethernet connection
             is_ethernet = self.is_ethernet_connection()
             
-            def last_vi():
-                """Get last voltage, current and relative time from device buffer"""
-                try:
-                    # Store original timeout - handle both socket and VISA connections
-                    if is_ethernet:
-                        original_timeout = self.interface.connection.gettimeout()
-                        self.interface.connection.settimeout(15.0)  # 15 second timeout for Ethernet
-                        time.sleep(0.1)  # Delay for ethernet
-                    else:
-                        original_timeout = getattr(self.interface.connection, 'timeout', 5000)
-                        if hasattr(self.interface.connection, 'timeout'):
-                            self.interface.connection.timeout = 5000  # 5 second timeout for USB
-                    
-                    # Try buffer method first
-                    buf = self.query_command(':BATT:DATA:DATA? "VOLT,CURR,REL"')
-                    
-                    if buf and len(buf.split(',')) >= 3:
-                        vals = list(map(float, buf.split(',')[-3:]))
-                        # Restore original timeout
-                        if is_ethernet:
-                            self.interface.connection.settimeout(original_timeout)
-                        else:
-                            if hasattr(self.interface.connection, 'timeout'):
-                                self.interface.connection.timeout = original_timeout
-                        return vals[0], vals[1], vals[2]
-                    
-                    # If buffer fails, try direct measurement with retries
-                    for retry in range(5):  # More retries
-                        try:
-                            if is_ethernet:
-                                time.sleep(0.2)  # Longer delay for ethernet
-                            
-                            volt_response = self.query_command(':MEAS:VOLT?')
-                            if is_ethernet:
-                                time.sleep(0.1)  # Additional delay between commands
-                            curr_response = self.query_command(':MEAS:CURR?')
-                            
-                            if volt_response and curr_response:
-                                try:
-                                    voltage = float(volt_response.strip())
-                                    current = float(curr_response.strip())
-                                    rel_time = time.time() - t0
-                                    # Restore original timeout
-                                    if is_ethernet:
-                                        self.interface.connection.settimeout(original_timeout)
-                                    else:
-                                        if hasattr(self.interface.connection, 'timeout'):
-                                            self.interface.connection.timeout = original_timeout
-                                    return voltage, current, rel_time
-                                except ValueError as ve:
-                                    print(f'DEBUG: Could not parse measurement data: V="{volt_response}" I="{curr_response}"')
-                        except Exception as e:
-                            if retry < 4:
-                                wait_time = 0.5 * (retry + 1)  # Progressive backoff
-                                print(f'DEBUG: Measurement retry {retry + 1}/5 failed: {e}, waiting {wait_time}s')
-                                time.sleep(wait_time)
-                                continue
-                            else:
-                                print(f'DEBUG: Direct measurement failed after 5 retries: {e}')
-                    
-                    # Restore original timeout
-                    if is_ethernet:
-                        self.interface.connection.settimeout(original_timeout)
-                    else:
-                        if hasattr(self.interface.connection, 'timeout'):
-                            self.interface.connection.timeout = original_timeout
-                    return None, None, None
-                    
-                except Exception as e:
-                    print(f'DEBUG: Exception in last_vi(): {e}')
-                    try:
-                        if is_ethernet:
-                            self.interface.connection.settimeout(original_timeout)
-                        else:
-                            if hasattr(self.interface.connection, 'timeout'):
-                                self.interface.connection.timeout = original_timeout
-                    except:
-                        pass
-                    return None, None, None
-            
-            # Initialize device for battery testing
+            # Initialize device with ethernet-specific timeouts
             try:
                 print("Initializing Keithley for pulse test...")
                 print(f"Connection type: {'Ethernet' if is_ethernet else 'USB/GPIB'}")
                 
-                # Reset device
-                self.send_command('*RST')
-                time.sleep(3 if is_ethernet else 1)
+                # Set timeout like working script (5 seconds = 5000ms)
+                if is_ethernet and hasattr(self.interface.connection, 'settimeout'):
+                    self.interface.connection.settimeout(5.0)  # 5 second timeout like working script
+                    print("Set ethernet timeout to 5 seconds like working script")
+                elif hasattr(self.interface.connection, 'timeout'):
+                    self.interface.connection.timeout = 5000  # 5000ms for VISA connections
+                    print("Set VISA timeout to 5000ms like working script")
                 
-                # Test basic communication
-                try:
-                    idn_response = self.query_command('*IDN?')
-                    print(f"DEBUG: Device identified as: {idn_response[:50]}...")
-                except Exception as e:
-                    print(f"WARNING: Device identification failed: {e}")
-                    raise Exception("Device not responding to basic commands")
+                # Exact initialization sequence from working script
+                self.send_command('*CLS')
+                self.send_command('SYST:REM')
+                self.send_command(':FUNC TEST')
+                self.send_command(':BATT:TEST:MODE DIS')
+                self.send_command(f':BATT:TEST:SENS:SAMP:INT {sample_interval}')
+                self.send_command(f':BATT:TEST:SENS:EVOC:DELA {EVOC_DLY}')
+                self.send_command(':FORM:UNITS OFF')
+                self.send_command(':SYST:AZER OFF')
                 
-                # Clear and setup with delays for ethernet
-                self.send_command_with_delay('*CLS')
-                self.send_command_with_delay('SYST:REM')
-                self.send_command_with_delay(':FUNC TEST')
-                self.send_command_with_delay(':BATT:TEST:MODE DIS')
+                # Data logger setup exactly like working script
+                self.send_command(':BATT:DATA:CLE')
+                self.send_command(':BATT:DATA:STAT ON')
+                self.send_command(':BATT:TEST:EXEC STAR')
                 
-                # Pre-configure pulse current settings
-                print(f'DEBUG: Configuring pulse current to {i_pulse}A')
-                self.send_command_with_delay(f':BATT:TEST:CURR:END {i_pulse:.6f}')
-                self.send_command_with_delay(f':BATT:TEST:CURR:LIM:SOUR {i_pulse:.6f}')
+                # Add delay like working script has between init and pulse start
+                time.sleep(1.0)  # Allow data logger to initialize properly
                 
-                # Verify current settings
-                try:
-                    curr_end = self.query_command(':BATT:TEST:CURR:END?')
-                    curr_lim = self.query_command(':BATT:TEST:CURR:LIM:SOUR?')
-                    print(f'DEBUG: Current settings confirmed - End: {curr_end}, Limit: {curr_lim}')
-                except:
-                    print('DEBUG: Could not verify current settings')
-                
-                # Continue initialization
-                self.send_command_with_delay(f':BATT:TEST:SENS:SAMP:INT {sample_interval}')
-                self.send_command_with_delay(f':BATT:TEST:SENS:EVOC:DELA {EVOC_DLY}')
-                self.send_command_with_delay(':FORM:UNITS OFF')
-                self.send_command_with_delay(':SYST:AZER OFF')
-                
-                # Clear buffer multiple times to ensure it's ready
-                for _ in range(3):
-                    self.send_command_with_delay(':BATT:DATA:CLE')
-                    time.sleep(0.2 if is_ethernet else 0.1)
-                
-                self.send_command_with_delay(':BATT:DATA:STAT ON')
-                time.sleep(0.5 if is_ethernet else 0.2)
-                
-                self.send_command_with_delay(':BATT:TEST:EXEC STAR')
-                
-                # Wait longer for data collection to start
-                time.sleep(3.0 if is_ethernet else 1.0)
-                
-                # Verify data collection is working
-                buffer_working = False
-                try:
-                    test_data = self.query_command(':BATT:DATA:DATA? "VOLT,CURR,REL"')
-                    if test_data and ',' in test_data:
-                        print(f"DEBUG: Data collection active, sample: {test_data[:50]}...")
-                        buffer_working = True
-                    else:
-                        print("DEBUG: WARNING - No data in buffer after initialization")
-                except Exception as e:
-                    print(f"DEBUG: WARNING - Failed to read test data: {e}")
-                
-                # If buffer not working, test direct measurements
-                if not buffer_working:
-                    print("DEBUG: Testing direct measurement as fallback...")
+                # Check if data logging is active (debug for ethernet)
+                if is_ethernet:
                     try:
-                        volt_test = self.query_command(':MEAS:VOLT?')
-                        curr_test = self.query_command(':MEAS:CURR?')
-                        if volt_test and curr_test:
-                            print(f"DEBUG: Direct measurement working - V:{volt_test} I:{curr_test}")
-                        else:
-                            print("WARNING: Both buffer and direct measurements failing")
+                        data_status = self.query_command(':BATT:DATA:STAT?')
+                        print(f'DEBUG: Data logging status: {data_status}')
                     except Exception as e:
-                        print(f"WARNING: Direct measurement test failed: {e}")
+                        print(f'DEBUG: Could not query data status: {e}')
                 
+                print('DEBUG: Simple initialization completed')
                 print("Device initialization complete")
                 
             except Exception as e:
@@ -665,96 +557,70 @@ class KeithleyController(BaseDeviceController):
                     t0 = time.time()
                     print(f"Starting pulse test: {pulses} pulses...")
                     
+                    def last_vi():
+                        """Simple buffer read exactly like working script - works for both USB and Ethernet"""
+                        try:
+                            buf = self.query_command(':BATT:DATA:DATA? "VOLT,CURR,REL"')
+                            # Enhanced debug output for ethernet connections
+                            if is_ethernet and (cyc <= 2):  # Show debug for first two pulses
+                                print(f'[DEBUG] Buffer response length: {len(buf) if buf else 0}')
+                                if buf:
+                                    print(f'[DEBUG] Buffer response: "{buf[:200]}..."' if len(buf) > 200 else f'[DEBUG] Buffer response: "{buf}"')
+                                else:
+                                    print('[DEBUG] Buffer response: empty string')
+                            
+                            if not buf or buf.strip() == '':  # empty string or whitespace only
+                                return None, None, None
+                                
+                            # Split and get last three values
+                            parts = buf.split(',')
+                            if len(parts) < 3:
+                                if is_ethernet and (cyc <= 2):
+                                    print(f'[DEBUG] Not enough data parts: {len(parts)}')
+                                return None, None, None
+                                
+                            vals = list(map(float, parts[-3:]))  # last three numbers
+                            v, i, rel = vals
+                            return v, i, rel
+                        except Exception as e:
+                            if is_ethernet and (cyc <= 2):  # Show debug for first two pulses
+                                print(f'[DEBUG] last_vi() exception: {e}')
+                            return None, None, None
+                    
                     for cyc in range(1, pulses + 1):
                         print(f"Executing pulse {cyc}/{pulses}...")
                         
-                        # Ramp up phase
-                        for lim in RAMP_UP:
-                            # Format and send current command
-                            current_cmd = f':BATT:TEST:CURR:LIM:SOUR {lim:.6f}'
-                            self.send_command_with_delay(current_cmd)
-                            
-                            # Verify for debugging
-                            if cyc == 1:  # Only verify on first cycle
-                                try:
-                                    actual = self.query_command(':BATT:TEST:CURR:LIM:SOUR?')
-                                    print(f'DEBUG: Ramp current {lim}A, device reports: {actual}')
-                                except:
-                                    pass
-                            
-                            self.send_command(':BATT:OUTP ON')
-                            end = time.time() + 2
-                            
-                            while time.time() < end:
-                                v, i, rel = last_vi()
-                                if v is not None:
-                                    wp.writerow([f'{rel:.3f}', f'{v:.6f}', f'{i:.6f}'])
-                                    fpulse.flush()
-                                time.sleep(STEP)
+                        # PULSE - Direct on/off for Keithley 2281S Battery Test mode
+                        # Set discharge current and turn on output
+                        self.send_command(f':BATT:TEST:CURR:LIM:SOUR {I_PULSE}')
+                        self.send_command(':BATT:OUTP ON')
                         
-                        # Pulse phase - ensure current is set correctly
-                        print(f'DEBUG: Setting pulse current to {i_pulse}A')
+                        # Give buffer time to start collecting data after output is turned on
+                        time.sleep(0.5)
                         
-                        # Set current with both methods for compatibility
-                        self.send_command_with_delay(f':BATT:TEST:CURR:LIM:SOUR {i_pulse:.6f}')
-                        self.send_command_with_delay(f':BATT:TEST:CURR:END {i_pulse:.6f}')
-                        
-                        # Verify on first pulse
-                        if cyc == 1:
-                            try:
-                                actual = self.query_command(':BATT:TEST:CURR:LIM:SOUR?')
-                                print(f'DEBUG: Pulse current set to {i_pulse}A, device reports: {actual}')
-                            except:
-                                pass
-                        
-                        print(f'>>> Pulse {cyc} — {pulse_time}s @ {i_pulse}A')
+                        print(f'>>> {cyc}. PULSE — {pulse_time}s @ ~1A (Battery Test mode)')
                         end = time.time() + pulse_time
-                        pulse_count = 0
-                        
                         while time.time() < end:
                             v, i, rel = last_vi()
-                            if v is not None:
+                            if v is not None: 
                                 wp.writerow([f'{rel:.3f}', f'{v:.6f}', f'{i:.6f}'])
                                 fpulse.flush()
-                                pulse_count += 1
                             time.sleep(STEP)
                         
-                        print(f'DEBUG: Pulse phase logged {pulse_count} data points')
-                        
-                        # Ramp down phase
-                        for lim in RAMP_DN:
-                            self.send_command_with_delay(f':BATT:TEST:CURR:LIM:SOUR {lim:.6f}')
-                            end = time.time() + 2
-                            
-                            while time.time() < end:
-                                v, i, rel = last_vi()
-                                if v is not None:
-                                    wp.writerow([f'{rel:.3f}', f'{v:.6f}', f'{i:.6f}'])
-                                    fpulse.flush()
-                                time.sleep(STEP)
-                        
-                        # Rest phase
+                        # REST + EVOC exactly like working script
                         self.send_command(':BATT:OUTP OFF')
-                        print(f'>>> Rest {cyc} — {rest_time}s')
+                        self.send_command(f':BATT:TEST:CURR:LIM:SOUR {I_REST}')
+                        print(f'>>> Dinlenme — {rest_time}s')
                         end = time.time() + rest_time
-                        rest_count = 0
-                        
                         while time.time() < end:
-                            # Get EVOC measurement
                             try:
                                 evoc_response = self.query_command(':BATT:TEST:MEAS:EVOC?')
-                                if evoc_response:
-                                    esr, voc = map(float, evoc_response.split(','))
-                                    wr.writerow([f'{time.time()-t0:.3f}', f'{voc:.6f}', f'{esr:.6f}'])
-                                    frest.flush()
-                                    rest_count += 1
-                                    print(f'REST: VOC={voc:.3f}V ESR={esr:.6f}Ω')
+                                esr, voc = map(float, evoc_response.split(','))
+                                wr.writerow([f'{time.time()-t0:.3f}', f'{voc:.6f}', f'{esr:.6f}'])
+                                frest.flush()
                             except Exception as e:
-                                print(f'DEBUG: EVOC measurement failed: {e}')
-                            
+                                print(f'EVOC measurement failed: {e}')
                             time.sleep(STEP)
-                        
-                        print(f'DEBUG: Rest phase logged {rest_count} data points')
                     
                     print("Pulse test completed successfully")
                     
@@ -762,10 +628,9 @@ class KeithleyController(BaseDeviceController):
                     return (pulse_file, rest_file)
                     
             except Exception as e:
-                # Ensure device is cleaned up on error
+                # Clean up on error - only turn off output
                 try:
                     self.send_command(':BATT:OUTP OFF')
-                    self.local_mode()
                 except:
                     pass
                 raise Exception(f"Pulse test execution failed: {e}")
@@ -774,12 +639,9 @@ class KeithleyController(BaseDeviceController):
             # Always clear busy state
             self.set_busy(False)
             
-            # Clean up device state
+            # Clean up device state - only turn off output, keep connection
             try:
                 self.send_command(':BATT:OUTP OFF')
-                self.send_command(':BATT:TEST:EXEC STOP')
-                self.send_command(':BATT:DATA:STAT OFF')
-                self.local_mode()
             except:
                 pass
                 
@@ -1053,10 +915,9 @@ class KeithleyController(BaseDeviceController):
             raise
             
         finally:
-            # Cleanup
+            # Cleanup - only turn off output, keep connection
             try:
                 self.send_command(':BATT:OUTP OFF')
-                self.send_command('SYST:LOC')
             except:
                 pass
                 
@@ -1209,35 +1070,38 @@ class KeithleyController(BaseDeviceController):
             self.send_command(':BATT:OUTP ON')
             print(f"Output ON. Applying constant {discharge_current}A discharge...")
 
+            # Calculate total discharge time
+            total_duration = sum(segment['duration_s'] for segment in segments)
+            print(f"Total discharge time: {total_duration:.1f}s")
+
             for i, segment in enumerate(segments):
                 duration = segment['duration_s']
                 step_no = step_offset + i + 1
                 print(f"  -> Segment {step_no}: Waiting for {duration:.2f}s")
                 
-                # Take measurement using reference script's buffer approach
-                retry_count = 0
-                max_retries = 3
-                
-                while retry_count < max_retries:
-                    try:
-                        measured_v, measured_i, rel_time = self.measure_battery_data_buffer()
-                        if measured_v is not None and measured_i is not None:
-                            print(f"    Measurement: V={measured_v:.3f}V, I={measured_i:.3f}A")
-                            self.logger.log_segment(step_no, 'discharge', discharge_current, 
-                                                  measured_v, measured_i, self.logger.elapsed(), 'OK')
-                            break
-                        else:
-                            raise ValueError("No valid data from buffer")
-                    except Exception as e:
-                        retry_count += 1
-                        if retry_count < max_retries:
-                            print(f"    Measurement failed (attempt {retry_count}), retrying in 1s...")
-                            time.sleep(1)
-                        else:
-                            print(f"    Measurement failed after {max_retries} attempts: {e}")
-                            self.logger.log_error(step_no, 'discharge', str(e))
+                # Skip individual measurements during Battery Test mode to avoid conflicts
+                # Log the segment with expected values instead
+                self.logger.log_segment(step_no, 'discharge', discharge_current, 
+                                      None, None, self.logger.elapsed(), 'DISCHARGE_MODE')
                 
                 time.sleep(duration)
+                
+            # Take one final measurement after all segments complete
+            print("Taking final measurement after discharge batch...")
+            try:
+                # Brief delay to let device settle
+                time.sleep(0.5)
+                measured_v, measured_i, rel_time = self.measure_battery_data_buffer()
+                if measured_v is not None and measured_i is not None:
+                    print(f"Final measurement: V={measured_v:.3f}V, I={measured_i:.3f}A")
+                    # Log final measurement
+                    final_step = step_offset + len(segments)
+                    self.logger.log_segment(final_step, 'discharge_final', discharge_current, 
+                                          measured_v, measured_i, self.logger.elapsed(), 'FINAL')
+                else:
+                    print("Final measurement failed - continuing anyway")
+            except Exception as e:
+                print(f"Final measurement failed: {e} - continuing anyway")
                 
         except Exception as e:
             print(f"ERROR during discharge batch: {e}")
@@ -1280,6 +1144,19 @@ class KeithleyController(BaseDeviceController):
             print(f"Error: {error_msg}")
             raise Exception(error_msg)
             
+        # Test basic communication before starting
+        print("Testing device communication...")
+        try:
+            idn = self.query_command('*IDN?')
+            if idn:
+                print(f"Device responds: {idn.strip()[:50]}...")
+            else:
+                raise Exception("Device not responding to *IDN?")
+        except Exception as e:
+            error_msg = f"Communication test failed: {e}"
+            print(f"Error: {error_msg}")
+            raise Exception(error_msg)
+            
         # Load profile
         print("Loading current profile...")
         profile_df = self.load_current_profile(profile_path)
@@ -1288,8 +1165,9 @@ class KeithleyController(BaseDeviceController):
             print(f"Error: {error_msg}")
             raise Exception(error_msg)
 
-        # Set device as busy
+        # Set device as busy to prevent monitoring interference
         self.set_busy(True)
+        print("Device marked as BUSY - monitoring disabled during profile execution")
         
         # Initialize logger
         self.logger.clear_log()
@@ -1347,14 +1225,27 @@ class KeithleyController(BaseDeviceController):
             return None
         except Exception as e:
             print(f"\n\n❌ Unexpected error: {e}")
+            print("Attempting device recovery...")
+            try:
+                # Try to recover the device
+                self.send_command('*RST')
+                time.sleep(1)
+                self.send_command(':OUTP OFF')
+                self.send_command(':BATT:OUTP OFF')
+                print("Device recovery attempted")
+            except:
+                print("Device recovery failed")
             return None
         finally:
             # Always clear busy state and clean up
+            print("Cleaning up after profile execution...")
             self.current_mode = None
             self.set_busy(False)
+            print("Device no longer BUSY - monitoring re-enabled")
             try:
                 self.send_command(':OUTP OFF')
                 self.send_command(':BATT:OUTP OFF')
-                self.local_mode()
-            except:
+                print("Device cleanup completed - outputs turned off")
+            except Exception as cleanup_error:
+                print(f"Cleanup error (non-critical): {cleanup_error}")
                 pass

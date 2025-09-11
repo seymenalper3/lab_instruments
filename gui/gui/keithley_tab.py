@@ -262,9 +262,10 @@ class KeithleyTab(DeviceTab):
             msg += f"Pulses: {pulses}\n"
             msg += f"Pulse Time: {pulse_time}s\n"
             msg += f"Rest Time: {rest_time}s\n"
-            msg += f"Pulse Current: {pulse_current}A\n\n"
-            msg += "This will take approximately "
-            msg += f"{pulses * (pulse_time + rest_time + 8):.0f} seconds"
+            msg += f"Discharge Current: ~1A (Battery Test mode)\n\n"
+            msg += f"⚠️ Note: Keithley 2281S discharges at ~1A regardless of current setting\n"
+            msg += f"Total time per pulse: {pulse_time + rest_time}s\n"
+            msg += f"This will take approximately {pulses * (pulse_time + rest_time):.0f} seconds total"
             
             if not messagebox.askyesno("Confirm Pulse Test", msg):
                 return
@@ -361,8 +362,20 @@ class KeithleyTab(DeviceTab):
             messagebox.showerror("Error", f"Battery model test failed: {e}")
     
     def _run_pulse_test_thread(self, pulses, pulse_time, rest_time, pulse_current):
-        """Run pulse test in background thread"""
+        """Run pulse test in background thread with automatic Battery Test mode switching"""
         try:
+            # Automatically switch to Battery Test mode before running pulse test
+            print("Switching to Battery Test mode for pulse test...")
+            mode_success = self.controller.switch_to_battery_test_mode()
+            if not mode_success:
+                raise Exception("Failed to switch to Battery Test mode - pulse test requires Battery Test mode")
+            
+            # Update mode status on main thread
+            self.frame.after(0, lambda: self.mode_status_label.config(
+                text="Mode: Battery Test (Auto)", foreground="blue"))
+            
+            print("Battery Test mode activated - running pulse test...")
+            
             # Run the test
             pulse_file, rest_file = self.controller.run_pulse_test(
                 pulses=pulses,
@@ -407,8 +420,20 @@ class KeithleyTab(DeviceTab):
     def _run_battery_model_thread(self, discharge_voltage, discharge_current, 
                                  charge_voltage, charge_current, esr_interval, 
                                  model_slot, v_min, v_max, export_csv):
-        """Run battery model test in background thread"""
+        """Run battery model test in background thread with automatic Battery Test mode switching"""
         try:
+            # Automatically switch to Battery Test mode before running battery model test
+            print("Switching to Battery Test mode for battery model generation...")
+            mode_success = self.controller.switch_to_battery_test_mode()
+            if not mode_success:
+                raise Exception("Failed to switch to Battery Test mode - battery model test requires Battery Test mode")
+            
+            # Update mode status on main thread
+            self.frame.after(0, lambda: self.mode_status_label.config(
+                text="Mode: Battery Test (Auto)", foreground="blue"))
+            
+            print("Battery Test mode activated - running battery model test...")
+            
             # Run the test
             results = self.controller.run_battery_model_test(
                 discharge_voltage=discharge_voltage,

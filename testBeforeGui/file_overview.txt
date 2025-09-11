@@ -1,0 +1,41 @@
+PRODIGIT 34205A CONTROLLER FILES
+================================
+
+PRODUCTION FILES (Use these):
+-----------------------------
+📋 README.md           - Complete documentation and setup guide
+🔧 prodigit_final.py    - Main controller class (verified working commands only)
+⚡ quick_test.py        - Fast verification test (run this first!)
+📊 test_suite.py        - Comprehensive test suite (all functions)  
+📖 examples.py          - Usage examples (basic to advanced)
+📈 data_logger.py       - CSV data logging with timestamps
+
+DEVELOPMENT/DISCOVERY FILES (Reference only):
+---------------------------------------------
+🔍 discovery.py         - Command discovery script (found working commands)
+🔍 debug_mode.py        - Mode debugging (found MODE CV only works)
+🔍 device_info.py       - Device information test
+🔍 test_modes.py        - Mode testing script
+🔧 prodigit_controller.py - Earlier controller version
+
+QUICK START:
+-----------
+1. Connect USB device to /dev/ttyUSB0
+2. Run: python3 quick_test.py
+3. Use: from prodigit_final import Prodigit34205A
+
+VERIFIED WORKING FEATURES:
+-------------------------
+✅ Measurements: MEAS:VOLT?, MEAS:CURR?, MEAS:POW?
+✅ Settings: CURR, VOLT, POW, RES
+✅ Control: INP ON/OFF, LOAD ON/OFF
+✅ Status: MODE?, LOAD?, ERR?
+⚠️  Mode: Only MODE CV works reliably
+
+CONNECTION:
+----------
+- Port: /dev/ttyUSB0
+- Baudrate: 115200
+- Protocol: PL2303 USB-Serial
+- Line ending: \r\n
+- Delay: 0.3s between commands

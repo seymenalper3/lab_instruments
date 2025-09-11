@@ -7,8 +7,8 @@ import pyvisa, time, csv, datetime, re, sys
 
 # —— parametreler ——
 PULSES, PULSE_T, REST_T  = 2, 30, 30
-RAMP_UP, RAMP_DN         = [0.05, 0.20], [0.20, 0.05]   # A
-I_PULSE, I_REST          = 1.0, 0.0001                  # A
+# Keithley 2281S Battery Test mode: discharges at ~1A, no variable discharge current
+I_PULSE, I_REST          = 1.0, 0.0001                  # A  
 SAMP_INT, STEP, EVOC_DLY = 0.5, 0.5, 0.05
 num = re.compile(r'[-+0-9.E]+'); fnum = lambda t: float(num.match(t).group())
 
@@ -54,33 +54,16 @@ t0 = time.time()                           # ortak referans
 try:
     for cyc in range(1, PULSES+1):
 
-        # —— RAMP-UP ——
-        for lim in RAMP_UP:
-            w(f':BATT:TEST:CURR:LIM:SOUR {lim}'); w(':BATT:OUTP ON')
-            time.sleep(0.6)
-            end = time.time()+2
-            while time.time()<end:
-                v,i,rel = last_vi()
-                if v is not None: wp.writerow([f'{rel:.3f}',f'{v:.6f}',f'{i:.6f}']); fpulse.flush()
-                time.sleep(STEP)
-
-        # —— PULSE ——
+        # —— PULSE (Direct on/off for Keithley 2281S) ——
+        # Keithley 2281S Battery Test mode discharges at ~1A regardless of current setting
         w(f':BATT:TEST:CURR:LIM:SOUR {I_PULSE}')
-        print(f'>>> {cyc}. DARBE — {PULSE_T}s')
+        w(':BATT:OUTP ON')
+        print(f'>>> {cyc}. PULSE — {PULSE_T}s @ ~1A (Battery Test mode)')
         end = time.time()+PULSE_T
         while time.time()<end:
             v,i,rel = last_vi()
             if v is not None: wp.writerow([f'{rel:.3f}',f'{v:.6f}',f'{i:.6f}']); fpulse.flush()
             time.sleep(STEP)
-
-        # —— RAMP-DOWN ——
-        for lim in RAMP_DN:
-            w(f':BATT:TEST:CURR:LIM:SOUR {lim}')
-            end = time.time()+2
-            while time.time()<end:
-                v,i,rel = last_vi()
-                if v is not None: wp.writerow([f'{rel:.3f}',f'{v:.6f}',f'{i:.6f}']); fpulse.flush()
-                time.sleep(STEP)
 
         # —— REST + EVOC ——
         w(':BATT:OUTP OFF');   w(f':BATT:TEST:CURR:LIM:SOUR {I_REST}')

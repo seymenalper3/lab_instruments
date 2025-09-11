@@ -1,0 +1,6 @@
+2025-07-17 16:31:32,987 - INFO - Connected to: KEITHLEY INSTRUMENTS,MODEL 2281S-20-6,4587429,01.08b
+2025-07-17 16:31:32,989 - INFO - === STARTING BATTERY DISCHARGE ===
+2025-07-17 16:31:33,036 - INFO - Waiting for measurement (max 4 hours)...
+2025-07-17 16:31:39,099 - ERROR - Failed to get status: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+2025-07-17 16:31:39,100 - ERROR - Test failed: Failed to get measurement status
+2025-07-17 16:31:39,101 - INFO - Cleanup completed
