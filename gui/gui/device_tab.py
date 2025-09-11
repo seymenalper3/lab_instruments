@@ -35,6 +35,9 @@ class DeviceTab:
         )
         self.connection_widget.pack(fill='x', padx=5, pady=5)
         
+        # Status bar
+        self.create_status_bar()
+        
         # Control frame
         self.control_frame = ttk.LabelFrame(self.frame, text="Control Settings")
         self.control_frame.pack(fill='x', padx=5, pady=5)
@@ -56,35 +59,57 @@ class DeviceTab:
             self.power_label = ttk.Label(self.meas_frame, text="Power: -- W")
             self.power_label.grid(row=0, column=2, padx=10, pady=5)
         
+    def create_status_bar(self):
+        """Create a status bar for displaying connection status and messages."""
+        style = ttk.Style(self.frame)
+        style.configure("Success.TLabel", foreground="green")
+        style.configure("Error.TLabel", foreground="red")
+        
+        self.status_bar = ttk.Label(self.frame, text="Disconnected", style="Error.TLabel", anchor='w')
+        self.status_bar.pack(fill='x', padx=5, pady=(0, 5))
+
     def create_controls(self):
         """Create device-specific control widgets - to be overridden"""
         pass
         
     def on_connect(self, config: ConnectionConfig):
-        """Handle device connection"""
+        """Handle connect button click"""
         try:
             # Create interface based on configuration
             interface = self._create_interface(config)
-            
+
             # Create controller
             self.controller = self.controller_class(interface)
-            
+
             # Connect to device
             self.controller.connect()
-            
-            messagebox.showinfo("Success", 
-                              f"Connected to {self.device_spec.name}\n{self.controller.model}")
-            
+
+            self.status_bar.config(text=f"Connected to: {self.controller.model}", style="Success.TLabel")
+            self.on_successful_connect()
+            return True
+
         except Exception as e:
             self.controller = None
-            raise e
-            
+            self.status_bar.config(text=f"Connection failed: {e}", style="Error.TLabel")
+            messagebox.showerror("Connection Error", str(e))
+            return False
+
     def on_disconnect(self):
         """Handle device disconnection"""
         if self.controller:
             self.controller.disconnect()
             self.controller = None
-            
+        self.status_bar.config(text="Disconnected", style="Error.TLabel")
+        self.on_successful_disconnect()
+
+    def on_successful_connect(self):
+        """Hook for child classes to override after a successful connection."""
+        pass
+
+    def on_successful_disconnect(self):
+        """Hook for child classes to override after a successful disconnection."""
+        pass
+
     def _create_interface(self, config: ConnectionConfig):
         """Create interface instance from configuration"""
         if config.interface_type.value == "RS232":
@@ -123,7 +148,12 @@ class DeviceTab:
             return None
             
         try:
-            return func(*args, **kwargs)
+            result = func()
+            # Some functions might return a result that we want to show
+            if isinstance(result, str):
+                self.status_bar.config(text=result, style="Success.TLabel")
+            return result
         except Exception as e:
+            self.status_bar.config(text=f"Error: {e}", style="Error.TLabel")
             messagebox.showerror("Error", f"Operation failed: {e}")
             return None

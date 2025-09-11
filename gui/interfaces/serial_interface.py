@@ -11,11 +11,15 @@ from interfaces.base_interface import DeviceInterface
 class SerialInterface(DeviceInterface):
     """RS232 Serial communication interface"""
     
-    def __init__(self, port, baudrate=9600, timeout=5):
+    def __init__(self, port, baudrate=9600, timeout=5, bytesize=8, parity='N', stopbits=1, rtscts=False):
         super().__init__()
         self.port = port
         self.baudrate = baudrate
         self.timeout = timeout
+        self.bytesize = bytesize
+        self.parity = parity
+        self.stopbits = stopbits
+        self.rtscts = rtscts
         
     def connect(self):
         """Establish serial connection"""
@@ -23,11 +27,11 @@ class SerialInterface(DeviceInterface):
             self.connection = serial.Serial(
                 port=self.port,
                 baudrate=self.baudrate,
-                bytesize=8,
-                parity='N',
-                stopbits=1,
+                bytesize=self.bytesize,
+                parity=self.parity,
+                stopbits=self.stopbits,
                 timeout=self.timeout,
-                rtscts=True  # Hardware handshaking
+                rtscts=self.rtscts
             )
             self.connected = True
             return True
@@ -45,13 +49,15 @@ class SerialInterface(DeviceInterface):
         if not self.connected:
             raise Exception("Not connected")
         cmd = command.strip() + '\r\n'
+        print(f"SERIAL SEND: {command}")
         self.connection.write(cmd.encode())
         
     def query(self, command):
         """Send command and read response via serial"""
         self.write(command)
-        time.sleep(0.1)
+        time.sleep(0.3)  # Increased delay for slower devices
         response = self.connection.readline().decode().strip()
+        print(f"SERIAL RECV: {response}")
         return response
         
     @staticmethod

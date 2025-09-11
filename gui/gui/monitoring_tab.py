@@ -252,8 +252,8 @@ class MonitoringTab:
                         widgets['power'].config(text="Power: PULSE", foreground="orange")
                     
                     # Update mode display for this device
-                    if name in self.data_logger.devices:
-                        controller = self.data_logger.devices[name]
+                    if device_name in self.data_logger.devices:
+                        controller = self.data_logger.devices[device_name]
                         if hasattr(controller, 'current_mode') and controller.current_mode:
                             mode_color = "green" if controller.current_mode == 'power' else "blue"
                             widgets['mode'].config(text=f"Mode: {controller.current_mode.upper()}", 

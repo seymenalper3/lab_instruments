@@ -6,6 +6,7 @@ from interfaces.base_interface import DeviceInterface
 
 try:
     import pyvisa
+    from pyvisa import constants
     VISA_AVAILABLE = True
 except ImportError:
     VISA_AVAILABLE = False
@@ -27,8 +28,22 @@ class VISAInterface(DeviceInterface):
             rm = pyvisa.ResourceManager()
             self.connection = rm.open_resource(self.resource_string)
             self.connection.timeout = self.timeout
-            self.connection.read_termination = '\n'
-            self.connection.write_termination = '\n'
+            
+            # Special handling for VISA-Serial (ASRL) resources like the Prodigit
+            if 'ASRL' in self.resource_string:
+                print("Configuring VISA-Serial port with Prodigit settings...")
+                self.connection.baud_rate = 115200
+                self.connection.data_bits = 8
+                self.connection.parity = constants.Parity.none
+                self.connection.stop_bits = constants.StopBits.one
+                self.connection.flow_control = constants.VI_ASRL_FLOW_NONE
+                self.connection.read_termination = '\r\n'
+                self.connection.write_termination = '\r\n'
+            else:
+                # Default for USBTMC, GPIB, etc.
+                self.connection.read_termination = '\n'
+                self.connection.write_termination = '\n'
+
             self.connected = True
             return True
         except Exception as e:
@@ -44,13 +59,17 @@ class VISAInterface(DeviceInterface):
         """Send command via VISA"""
         if not self.connected:
             raise Exception("Not connected")
+        print(f"VISA SEND: {command}")
         self.connection.write(command)
         
     def query(self, command):
         """Send command and read response via VISA"""
         if not self.connected:
             raise Exception("Not connected")
-        return self.connection.query(command).strip()
+        print(f"VISA QUERY: {command}")
+        response = self.connection.query(command).strip()
+        print(f"VISA RECV: {response}")
+        return response
         
     @staticmethod
     def get_available_resources():

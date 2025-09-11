@@ -147,22 +147,25 @@ DEVICE_SPECS = {
         max_voltage=600.0,
         max_current=160.0,
         max_power=5000.0,
-        supported_interfaces=[InterfaceType.RS232, InterfaceType.ETHERNET, InterfaceType.USB, InterfaceType.GPIB],
+        supported_interfaces=[InterfaceType.RS232, InterfaceType.USB],
         default_commands={
-            'identify': 'SYST:NAME?',
-            'set_mode_cc': 'STAT:MODE CC',
-            'set_current': 'CURR:HIGH {}',
-            'set_mode_cv': 'STAT:MODE CV',
-            'set_voltage': 'VOLT:HIGH {}',
-            'set_mode_cp': 'STAT:MODE CP',
+            'identify': '*IDN?',
+            'set_mode_cc': 'MODE CC',
+            'set_current': 'CC:HIGH {}',
+            'set_mode_cv': 'MODE CV',
+            'set_voltage': 'CV:HIGH {}',
+            'set_mode_cp': 'MODE CP',
             'set_power': 'CP:HIGH {}',
-            'set_mode_cr': 'STAT:MODE CR',
-            'set_resistance': 'RES:HIGH {}',
-            'load_on': 'STAT:LOAD ON',
-            'load_off': 'STAT:LOAD OFF',
+            'set_mode_cr': 'MODE CR',
+            'set_resistance': 'CR:HIGH {}',
+            'load_on': 'LOAD ON',
+            'load_off': 'LOAD OFF',
             'measure_voltage': 'MEAS:VOLT?',
             'measure_current': 'MEAS:CURR?',
-            'measure_power': 'MEAS:POW?'
+            'measure_power': 'MEAS:POW?',
+            'query_mode': 'MODE?',
+            'query_load': 'LOAD?',
+            'query_error': 'ERR?'
         }
     )
 }
