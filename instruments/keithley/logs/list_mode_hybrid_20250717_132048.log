@@ -1,0 +1,16 @@
+2025-07-17 13:20:48,337 - INFO - Connecting to instrument...
+2025-07-17 13:20:48,404 - INFO - Connected: KEITHLEY INSTRUMENTS,MODEL 2281S-20-6,4587429,01.08b
+2025-07-17 13:20:48,406 - INFO - Profile loaded: /home/seymen/lab_instruments/instruments/keithley/current_profile_for_sourcing.csv (24 points)
+2025-07-17 13:20:48,414 - INFO - Using average dwell time of 1.000s for all steps.
+2025-07-17 13:20:48,414 - INFO - Configuring instrument for LIST mode...
+2025-07-17 13:20:50,420 - INFO - Safety limits set: V <= 4.2V, I <= 1.2A
+2025-07-17 13:20:50,420 - INFO - Preparing TRACE buffer for 24 points...
+2025-07-17 13:20:50,425 - INFO - Instrument setup complete.
+2025-07-17 13:20:50,431 - INFO - Profile with 24 steps uploaded to instrument.
+2025-07-17 13:20:50,434 - INFO - Starting test. Turning output ON...
+2025-07-17 13:20:50,437 - INFO - Test running... waiting for completion.
+2025-07-17 13:21:50,484 - WARNING - Test stopped by user.
+2025-07-17 13:21:50,484 - INFO - Disconnecting and setting instrument to safe state.
+2025-07-17 13:21:51,485 - ERROR - Failed to send command ':ABOR': [Errno 110] Operation timed out
+2025-07-17 13:21:52,486 - ERROR - Failed to send command ':OUTP OFF': [Errno 110] Operation timed out
+2025-07-17 13:21:53,487 - ERROR - Failed to send command 'SYST:LOC': [Errno 110] Operation timed out

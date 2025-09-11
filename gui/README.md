@@ -29,7 +29,16 @@ gui/
 ├── models/                   # Veri modelleri
 │   └── device_config.py      # Cihaz konfigürasyonu
 ├── utils/                    # Yardımcı araçlar
-│   └── data_logger.py        # Veri loglama
+│   ├── data_logger.py        # Veri loglama
+│   └── keithley_logger.py    # Keithley özel loglama
+├── tests/                    # Test betikleri
+│   ├── test_structure.py     # Yapı testi
+│   ├── test_monitoring_fix.py # Monitoring testi
+│   └── test_pulse_simple.py  # Pulse test
+├── docs/                     # Dokümantasyon
+│   ├── MONITORING_FIX_SUMMARY.md
+│   ├── PULSE_TEST_FIXES.md
+│   └── STRUCTURE_SUMMARY.md
 └── battery_models/           # Batarya modelleri
 ```
 
@@ -228,9 +237,9 @@ logger.log_data({
 - `connection.log` - Bağlantı hataları
 
 ### Test Betikleri
-- `test_structure.py` - Yapı testi
-- `test_monitoring_fix.py` - Monitoring testi
-- `test_pulse_simple.py` - Pulse test
+- `tests/test_structure.py` - Yapı testi
+- `tests/test_monitoring_fix.py` - Monitoring testi
+- `tests/test_pulse_simple.py` - Pulse test
 
 ### Yaygın Sorunlar
 1. **Cihaz Bağlantısı**: VISA sürücülerini kontrol edin
@@ -253,9 +262,9 @@ timestamp,voltage,current,power,temperature
 ## 📚 Dokümantasyon
 
 ### Mevcut Dokümantasyon
-- `MONITORING_FIX_SUMMARY.md` - Monitoring düzeltmeleri
-- `PULSE_TEST_FIXES.md` - Pulse test düzeltmeleri
-- `STRUCTURE_SUMMARY.md` - Yapı özeti
+- `docs/MONITORING_FIX_SUMMARY.md` - Monitoring düzeltmeleri
+- `docs/PULSE_TEST_FIXES.md` - Pulse test düzeltmeleri
+- `docs/STRUCTURE_SUMMARY.md` - Yapı özeti
 
 ## 🔐 Güvenlik
 

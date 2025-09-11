@@ -1,0 +1,4 @@
+step,mode,set_current_a,measured_voltage_v,measured_current_a,elapsed_time_s,status
+1,charge,0.0,ERROR,ERROR,14.778989315032959,"ERROR: could not convert string to float: '+0.000000E+00A,+3.600954E+00,+3.553730E+01s'"
+2,discharge,-1.0,ERROR,ERROR,54.300819873809814,ERROR: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+3,discharge,-1.0,ERROR,ERROR,90.31124496459961,ERROR: VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.

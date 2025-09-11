@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
 """
-Keithley 2281S device tab with battery model generation
+Keithley 2281S device tab with enhanced functionality
+Enhanced with reference script patterns from auto_mode_profile.py
 """
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, filedialog
 from gui.device_tab import DeviceTab
 from models.device_config import DEVICE_SPECS, DeviceType
 from controllers.keithley_controller import KeithleyController
+import threading
+from pathlib import Path
+import pandas as pd
 
 
 class KeithleyTab(DeviceTab):
@@ -17,13 +21,17 @@ class KeithleyTab(DeviceTab):
         
     def create_controls(self):
         """Create Keithley-specific controls"""
-        # Function selection
-        ttk.Label(self.control_frame, text="Function:").grid(row=0, column=0, sticky='w', padx=5, pady=2)
+        # Function selection with mode switching
+        ttk.Label(self.control_frame, text="Function/Mode:").grid(row=0, column=0, sticky='w', padx=5, pady=2)
         self.function_combo = ttk.Combobox(self.control_frame, 
                                          values=["Power Supply", "Battery Test", "Battery Simulator"],
                                          state="readonly")
         self.function_combo.grid(row=0, column=1, padx=5, pady=2)
         self.function_combo.set("Power Supply")
+        
+        # Status label to show current mode
+        self.mode_status_label = ttk.Label(self.control_frame, text="Mode: Not Set", foreground="gray")
+        self.mode_status_label.grid(row=0, column=2, columnspan=2, sticky='w', padx=10, pady=2)
         
         # Voltage setting
         ttk.Label(self.control_frame, text="Voltage (V):").grid(row=1, column=0, sticky='w', padx=5, pady=2)
@@ -41,20 +49,48 @@ class KeithleyTab(DeviceTab):
         btn_frame = ttk.Frame(self.control_frame)
         btn_frame.grid(row=2, column=0, columnspan=4, pady=10)
         
-        ttk.Button(btn_frame, text="Set Parameters", 
+        ttk.Button(btn_frame, text="Set Parameters & Mode", 
                   command=self.set_parameters).pack(side='left', padx=5)
         ttk.Button(btn_frame, text="Output ON", 
                   command=self.output_on).pack(side='left', padx=5)
         ttk.Button(btn_frame, text="Output OFF", 
                   command=self.output_off).pack(side='left', padx=5)
-        ttk.Button(btn_frame, text="Run Pulse Test", 
+        
+        # Test buttons
+        test_frame = ttk.Frame(self.control_frame)
+        test_frame.grid(row=3, column=0, columnspan=4, pady=5)
+        
+        ttk.Button(test_frame, text="Run Pulse Test", 
                   command=self.run_pulse_test).pack(side='left', padx=5)
-        ttk.Button(btn_frame, text="Generate Battery Model", 
+        ttk.Button(test_frame, text="Generate Battery Model", 
                   command=self.run_battery_model).pack(side='left', padx=5)
+        ttk.Button(test_frame, text="Run Current Profile", 
+                  command=self.run_current_profile).pack(side='left', padx=5)
                   
+        # Current Profile parameters frame
+        profile_frame = ttk.LabelFrame(self.control_frame, text="Current Profile Parameters")
+        profile_frame.grid(row=4, column=0, columnspan=4, sticky='ew', padx=5, pady=5)
+        
+        ttk.Label(profile_frame, text="Profile File:").grid(row=0, column=0, sticky='w', padx=5, pady=2)
+        self.profile_file_var = tk.StringVar()
+        self.profile_file_entry = ttk.Entry(profile_frame, textvariable=self.profile_file_var, width=40)
+        self.profile_file_entry.grid(row=0, column=1, columnspan=2, padx=5, pady=2, sticky='ew')
+        ttk.Button(profile_frame, text="Browse", 
+                  command=self.browse_profile_file).grid(row=0, column=3, padx=5, pady=2)
+        
+        ttk.Label(profile_frame, text="Discharge Current (A):").grid(row=1, column=0, sticky='w', padx=5, pady=2)
+        self.profile_discharge_current_entry = ttk.Entry(profile_frame, width=10)
+        self.profile_discharge_current_entry.grid(row=1, column=1, padx=5, pady=2)
+        self.profile_discharge_current_entry.insert(0, "1.0")
+        
+        ttk.Label(profile_frame, text="Charge Voltage (V):").grid(row=1, column=2, sticky='w', padx=5, pady=2)
+        self.profile_charge_voltage_entry = ttk.Entry(profile_frame, width=10)
+        self.profile_charge_voltage_entry.grid(row=1, column=3, padx=5, pady=2)
+        self.profile_charge_voltage_entry.insert(0, "4.2")
+        
         # Pulse test parameters frame
         pulse_frame = ttk.LabelFrame(self.control_frame, text="Pulse Test Parameters")
-        pulse_frame.grid(row=3, column=0, columnspan=4, sticky='ew', padx=5, pady=5)
+        pulse_frame.grid(row=5, column=0, columnspan=4, sticky='ew', padx=5, pady=5)
         
         ttk.Label(pulse_frame, text="Pulses:").grid(row=0, column=0, sticky='w', padx=5, pady=2)
         self.pulses_entry = ttk.Entry(pulse_frame, width=8)
@@ -78,7 +114,7 @@ class KeithleyTab(DeviceTab):
         
         # Battery model parameters frame
         model_frame = ttk.LabelFrame(self.control_frame, text="Battery Model Parameters")
-        model_frame.grid(row=4, column=0, columnspan=4, sticky='ew', padx=5, pady=5)
+        model_frame.grid(row=6, column=0, columnspan=4, sticky='ew', padx=5, pady=5)
         
         # Discharge parameters
         ttk.Label(model_frame, text="Discharge End Voltage (V):").grid(row=0, column=0, sticky='w', padx=5, pady=2)
@@ -130,20 +166,49 @@ class KeithleyTab(DeviceTab):
                        variable=self.export_csv_var).grid(row=4, column=0, columnspan=2, sticky='w', padx=5, pady=5)
                   
     def set_parameters(self):
-        """Set voltage and current parameters"""
+        """Set voltage and current parameters with automatic mode switching"""
         def _set_params():
             voltage = float(self.voltage_entry.get())
             current = float(self.current_entry.get())
             
-            # Switch function if needed
+            # Get selected function and switch mode accordingly
             func = self.function_combo.get()
-            if func == "Battery Test":
-                self.controller.battery_test_mode()
+            mode_switched = False
             
+            if func == "Power Supply":
+                success = self.controller.switch_to_power_supply_mode()
+                if success:
+                    self.mode_status_label.config(text="Mode: Power Supply", foreground="green")
+                    mode_switched = True
+                else:
+                    raise Exception("Failed to switch to Power Supply mode")
+                    
+            elif func == "Battery Test":
+                success = self.controller.switch_to_battery_test_mode()
+                if success:
+                    self.mode_status_label.config(text="Mode: Battery Test", foreground="blue")
+                    mode_switched = True
+                    print("Battery Test mode: Using BATT:TEST commands for current/voltage control")
+                else:
+                    raise Exception("Failed to switch to Battery Test mode")
+                    
+            elif func == "Battery Simulator":
+                # For Battery Simulator mode, we can use Power Supply mode as base
+                success = self.controller.switch_to_power_supply_mode()
+                if success:
+                    self.mode_status_label.config(text="Mode: Battery Simulator", foreground="orange")
+                    mode_switched = True
+                else:
+                    raise Exception("Failed to switch to Battery Simulator mode")
+            
+            # Set voltage and current parameters
             self.controller.set_voltage(voltage)
             self.controller.set_current_limit(current)
             
-            return "Parameters set successfully"
+            if mode_switched:
+                return f"Mode switched to {func} and parameters set successfully"
+            else:
+                return "Parameters set successfully"
             
         result = self.safe_execute(_set_params)
         if result:
@@ -168,6 +233,16 @@ class KeithleyTab(DeviceTab):
         result = self.safe_execute(_output_off)
         if result:
             messagebox.showinfo("Success", result)
+    
+    def browse_profile_file(self):
+        """Browse for current profile CSV file"""
+        file_path = filedialog.askopenfilename(
+            title="Select Current Profile CSV",
+            filetypes=[("CSV files", "*.csv"), ("All files", "*.*")],
+            initialdir="."
+        )
+        if file_path:
+            self.profile_file_var.set(file_path)
             
     def run_pulse_test(self):
         """Run battery pulse test"""
@@ -187,9 +262,10 @@ class KeithleyTab(DeviceTab):
             msg += f"Pulses: {pulses}\n"
             msg += f"Pulse Time: {pulse_time}s\n"
             msg += f"Rest Time: {rest_time}s\n"
-            msg += f"Pulse Current: {pulse_current}A\n\n"
-            msg += "This will take approximately "
-            msg += f"{pulses * (pulse_time + rest_time + 8):.0f} seconds"
+            msg += f"Discharge Current: ~1A (Battery Test mode)\n\n"
+            msg += f"⚠️ Note: Keithley 2281S discharges at ~1A regardless of current setting\n"
+            msg += f"Total time per pulse: {pulse_time + rest_time}s\n"
+            msg += f"This will take approximately {pulses * (pulse_time + rest_time):.0f} seconds total"
             
             if not messagebox.askyesno("Confirm Pulse Test", msg):
                 return
@@ -286,8 +362,20 @@ class KeithleyTab(DeviceTab):
             messagebox.showerror("Error", f"Battery model test failed: {e}")
     
     def _run_pulse_test_thread(self, pulses, pulse_time, rest_time, pulse_current):
-        """Run pulse test in background thread"""
+        """Run pulse test in background thread with automatic Battery Test mode switching"""
         try:
+            # Automatically switch to Battery Test mode before running pulse test
+            print("Switching to Battery Test mode for pulse test...")
+            mode_success = self.controller.switch_to_battery_test_mode()
+            if not mode_success:
+                raise Exception("Failed to switch to Battery Test mode - pulse test requires Battery Test mode")
+            
+            # Update mode status on main thread
+            self.frame.after(0, lambda: self.mode_status_label.config(
+                text="Mode: Battery Test (Auto)", foreground="blue"))
+            
+            print("Battery Test mode activated - running pulse test...")
+            
             # Run the test
             pulse_file, rest_file = self.controller.run_pulse_test(
                 pulses=pulses,
@@ -332,8 +420,20 @@ class KeithleyTab(DeviceTab):
     def _run_battery_model_thread(self, discharge_voltage, discharge_current, 
                                  charge_voltage, charge_current, esr_interval, 
                                  model_slot, v_min, v_max, export_csv):
-        """Run battery model test in background thread"""
+        """Run battery model test in background thread with automatic Battery Test mode switching"""
         try:
+            # Automatically switch to Battery Test mode before running battery model test
+            print("Switching to Battery Test mode for battery model generation...")
+            mode_success = self.controller.switch_to_battery_test_mode()
+            if not mode_success:
+                raise Exception("Failed to switch to Battery Test mode - battery model test requires Battery Test mode")
+            
+            # Update mode status on main thread
+            self.frame.after(0, lambda: self.mode_status_label.config(
+                text="Mode: Battery Test (Auto)", foreground="blue"))
+            
+            print("Battery Test mode activated - running battery model test...")
+            
             # Run the test
             results = self.controller.run_battery_model_test(
                 discharge_voltage=discharge_voltage,
@@ -385,3 +485,119 @@ class KeithleyTab(DeviceTab):
                         btn.config(state='normal')
                         
         messagebox.showerror("Error", f"Battery model test failed: {error_msg}")
+    
+    def run_current_profile(self):
+        """Run current profile with automatic mode switching"""
+        if not self.is_connected():
+            messagebox.showerror("Error", "Keithley not connected")
+            return
+            
+        # Check if profile file is selected
+        profile_path = self.profile_file_var.get().strip()
+        if not profile_path:
+            messagebox.showerror("Error", "Please select a current profile CSV file")
+            return
+            
+        if not Path(profile_path).exists():
+            messagebox.showerror("Error", f"Profile file not found: {profile_path}")
+            return
+            
+        try:
+            # Get profile parameters
+            discharge_current = float(self.profile_discharge_current_entry.get())
+            charge_voltage = float(self.profile_charge_voltage_entry.get())
+            
+            # Estimate duration by loading profile
+            try:
+                df = pd.read_csv(profile_path)
+                if 'time_s' in df.columns and len(df) > 0:
+                    total_time = df['time_s'].max()
+                else:
+                    total_time = len(df) * 10  # Rough estimate
+            except Exception as e:
+                print(f"Warning: Could not estimate duration: {e}")
+                total_time = 300  # Default estimate
+            
+            # Confirm profile execution
+            msg = f"Run current profile with:\n\n"
+            msg += f"Profile: {Path(profile_path).name}\n"
+            msg += f"Discharge Current: {discharge_current}A\n"
+            msg += f"Charge Voltage: {charge_voltage}V\n\n"
+            msg += f"Estimated duration: {total_time/60:.0f} minutes\n\n"
+            msg += "⚠️ This will automatically switch between Power Supply and Battery Test modes\n"
+            msg += "Continue?"
+            
+            if not messagebox.askyesno("Confirm Current Profile", msg, icon='question'):
+                return
+                
+            # Disable the profile button
+            for widget in self.control_frame.winfo_children():
+                if isinstance(widget, ttk.Frame):
+                    for btn in widget.winfo_children():
+                        if isinstance(btn, ttk.Button) and btn.cget('text') == 'Run Current Profile':
+                            btn.config(state='disabled')
+            
+            # Run the profile in a separate thread
+            profile_thread = threading.Thread(
+                target=self._run_current_profile_thread,
+                args=(profile_path, discharge_current, charge_voltage)
+            )
+            profile_thread.daemon = True
+            profile_thread.start()
+                
+        except Exception as e:
+            # Re-enable the profile button on error
+            for widget in self.control_frame.winfo_children():
+                if isinstance(widget, ttk.Frame):
+                    for btn in widget.winfo_children():
+                        if isinstance(btn, ttk.Button) and btn.cget('text') == 'Run Current Profile':
+                            btn.config(state='normal')
+                            
+            messagebox.showerror("Error", f"Current profile failed: {e}")
+    
+    def _run_current_profile_thread(self, profile_path, discharge_current, charge_voltage):
+        """Run current profile in background thread"""
+        try:
+            # Run the profile
+            log_file = self.controller.run_current_profile(
+                profile_path=profile_path,
+                discharge_current=discharge_current,
+                charge_voltage=charge_voltage
+            )
+            
+            # Schedule GUI update on main thread
+            self.frame.after(0, lambda lf=log_file: self._current_profile_completed(lf))
+                                  
+        except Exception as e:
+            # Schedule error handling on main thread
+            error_msg = str(e)
+            self.frame.after(0, lambda msg=error_msg: self._current_profile_failed(msg))
+    
+    def _current_profile_completed(self, log_file):
+        """Handle current profile completion on main thread"""
+        # Re-enable the profile button
+        for widget in self.control_frame.winfo_children():
+            if isinstance(widget, ttk.Frame):
+                for btn in widget.winfo_children():
+                    if isinstance(btn, ttk.Button) and btn.cget('text') == 'Run Current Profile':
+                        btn.config(state='normal')
+        
+        if log_file:
+            messagebox.showinfo("Current Profile Complete", 
+                              f"✓ Profile executed successfully!\n\n"
+                              f"Log file: {log_file}\n\n"
+                              f"Check the logs directory for detailed results.")
+        else:
+            messagebox.showwarning("Current Profile", 
+                                 "Profile execution completed but no log file was generated.")
+    
+    def _current_profile_failed(self, error_msg):
+        """Handle current profile failure on main thread"""
+        # Re-enable the profile button
+        for widget in self.control_frame.winfo_children():
+            if isinstance(widget, ttk.Frame):
+                for btn in widget.winfo_children():
+                    if isinstance(btn, ttk.Button) and btn.cget('text') == 'Run Current Profile':
+                        btn.config(state='normal')
+                        
+        messagebox.showerror("Error", f"Current profile failed: {error_msg}")

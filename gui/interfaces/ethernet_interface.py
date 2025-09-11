@@ -37,34 +37,52 @@ class EthernetInterface(DeviceInterface):
         """Send command via ethernet"""
         if not self.connected:
             raise Exception("Not connected")
-        cmd = command.strip() + '\n'
+        cmd = command.strip() + '\r\n'
         self.connection.send(cmd.encode())
         
     def query(self, command):
         """Send command and read response via ethernet"""
         self.write(command)
-        # Use larger buffer for data-heavy commands like battery data
-        if ':BATT:DATA:DATA?' in command:
-            response = self._read_large_response()
-        else:
-            response = self.connection.recv(4096).decode().strip()
+        
+        # For buffer data queries that return large amounts of data, use specialized reading
+        if 'DATA:DATA?' in command.upper() or 'BUFFER' in command.upper():
+            return self._read_large_response()
+        
+        # Simple response reading for small commands
+        response = self.connection.recv(8192).decode().strip()
         return response
     
     def _read_large_response(self):
         """Read potentially large responses in chunks"""
         response_parts = []
-        self.connection.settimeout(15)  # Longer timeout for large data
+        original_timeout = self.timeout
+        self.connection.settimeout(5)  # Shorter timeout for buffer data
         
         try:
-            while True:
-                chunk = self.connection.recv(4096).decode()
-                if not chunk or chunk.endswith('\n'):
-                    response_parts.append(chunk)
-                    break
-                response_parts.append(chunk)
-        except socket.timeout:
-            pass  # Expected for end of data
-        finally:
-            self.connection.settimeout(self.timeout)  # Reset timeout
+            # Read initial response
+            initial_chunk = self.connection.recv(8192)
+            if not initial_chunk:
+                return ""
+                
+            response_parts.append(initial_chunk.decode())
             
-        return ''.join(response_parts).strip()
+            # Continue reading if there might be more data
+            # For Keithley buffer data, usually comes in one large chunk
+            try:
+                while True:
+                    self.connection.settimeout(0.5)  # Very short timeout for additional chunks
+                    chunk = self.connection.recv(4096)
+                    if not chunk:
+                        break
+                    response_parts.append(chunk.decode())
+            except socket.timeout:
+                pass  # Expected when no more data
+                
+        except socket.timeout:
+            # If we timeout on initial read, there might be no data
+            pass
+        finally:
+            self.connection.settimeout(original_timeout)  # Reset timeout
+            
+        result = ''.join(response_parts).strip()
+        return result

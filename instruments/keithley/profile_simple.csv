@@ -1,0 +1,5 @@
+time_s,current_a,
+0,0.5,Şarj
+10,-0.8,Deşarj → 1A'e çevrilir
+20,1.2,Şarj
+30,-1.1,Deşarj → 1A'e çevrilir
