@@ -104,9 +104,9 @@ class KeithleyLogger:
             ts = datetime.now().strftime('%Y%m%d_%H%M%S')
             filename = f'keithley_log_{ts}.csv'
         
-        # Ensure logs directory exists
-        log_dir = Path('./logs')
-        log_dir.mkdir(exist_ok=True)
+        # Ensure logs directory exists (project root data/logs)
+        log_dir = Path(__file__).parent.parent.parent / 'data' / 'logs'
+        log_dir.mkdir(parents=True, exist_ok=True)
         filepath = log_dir / filename
         
         with open(filepath, 'w', newline='', encoding='utf-8') as f:
@@ -164,9 +164,9 @@ class KeithleyLogger:
             ts = datetime.now().strftime('%Y%m%d_%H%M%S')
             filename = f'keithley_analysis_{ts}.csv'
         
-        # Ensure analysis directory exists
-        analysis_dir = Path('./analysis_data')
-        analysis_dir.mkdir(exist_ok=True)
+        # Ensure test results directory exists (project root data/test_results)
+        analysis_dir = Path(__file__).parent.parent.parent / 'data' / 'test_results'
+        analysis_dir.mkdir(parents=True, exist_ok=True)
         filepath = analysis_dir / filename
         
         # Enhanced export with calculated fields

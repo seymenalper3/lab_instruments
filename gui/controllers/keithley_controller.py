@@ -529,10 +529,14 @@ class KeithleyController(BaseDeviceController):
             except Exception as e:
                 raise Exception(f"Failed to initialize device for pulse test: {e}")
             
-            # Create output files
+            # Create output files in data/test_results
+            from pathlib import Path
+            data_dir = Path(__file__).parent.parent.parent / 'data' / 'test_results'
+            data_dir.mkdir(parents=True, exist_ok=True)
+            
             stamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
-            pulse_file = f'pulse_bt_{stamp}.csv'
-            rest_file = f'rest_evoc_{stamp}.csv'
+            pulse_file = data_dir / f'pulse_bt_{stamp}.csv'
+            rest_file = data_dir / f'rest_evoc_{stamp}.csv'
             
             print(f"Creating output files: {pulse_file}, {rest_file}")
             
@@ -825,9 +829,9 @@ class KeithleyController(BaseDeviceController):
                 self.send_command(f':BATT:MOD:RCL {model_slot}')
                 time.sleep(1)
                 
-                # Prepare CSV file
-                data_dir = Path('./battery_models')
-                data_dir.mkdir(exist_ok=True)
+                # Prepare CSV file in data/test_results
+                data_dir = Path(__file__).parent.parent.parent / 'data' / 'test_results'
+                data_dir.mkdir(parents=True, exist_ok=True)
                 csv_file = data_dir / f'battery_model_slot{model_slot}_{test_id}.csv'
                 
                 with open(csv_file, 'w', newline='') as f:
@@ -862,7 +866,10 @@ class KeithleyController(BaseDeviceController):
                 
                 if points > 0:
                     print(f"Buffer contains {points} data points")
-                    data_file = data_dir / f'battery_measurements_{test_id}.csv'
+                    # Use data/test_results directory
+                    results_dir = Path(__file__).parent.parent.parent / 'data' / 'test_results'
+                    results_dir.mkdir(parents=True, exist_ok=True)
+                    data_file = results_dir / f'battery_measurements_{test_id}.csv'
                     
                     with open(data_file, 'w', newline='') as f:
                         writer = csv.writer(f)

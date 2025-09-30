@@ -352,10 +352,16 @@ class MonitoringTab:
             messagebox.showwarning("Warning", "No data to save")
             return
             
+        # Set default directory to data/test_results
+        from pathlib import Path
+        default_dir = Path(__file__).parent.parent.parent / 'data' / 'test_results'
+        default_dir.mkdir(parents=True, exist_ok=True)
+        
         filename = filedialog.asksaveasfilename(
             defaultextension=".csv",
             filetypes=[("CSV files", "*.csv"), ("All files", "*.*")],
-            title="Save monitoring data"
+            title="Save monitoring data",
+            initialdir=str(default_dir)
         )
         
         if filename:
