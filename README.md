@@ -7,6 +7,9 @@ Bu proje, laboratuvar cihazlarının kontrolü ve test işlemleri için gelişti
 ```
 lab_instruments/
 ├── docs/                    # Cihaz manuelleri ve dökümanlar
+├── data/                    # Merkezi veri yönetimi
+│   ├── test_results/       # Tüm test sonuç dosyaları (CSV)
+│   └── logs/               # Tüm log dosyaları
 ├── instruments/             # Cihazlara özel kodlar ve veriler
 │   ├── keithley/           # Keithley cihazları
 │   │   ├── src/            # Kaynak kodlar (kategorilere ayrılmış)
@@ -16,13 +19,22 @@ lab_instruments/
 │   │   │   ├── pulse_tests/         # Pulse test betikleri
 │   │   │   ├── utilities/           # Yardımcı araçlar
 │   │   │   └── demos/               # Demo betikleri
-│   │   ├── data/           # Ham veri dosyaları
-│   │   ├── results/        # Test sonuçları
-│   │   └── logs/           # Log kayıtları
+│   │   ├── data/           # Cihaza özel ham veriler
+│   │   ├── results/        # Cihaza özel sonuçlar
+│   │   └── logs/           # Cihaza özel loglar
 │   └── sgx400/             # SGX400 cihazları
 ├── gui/                    # Ana GUI uygulaması
+│   ├── controllers/        # Cihaz kontrol sınıfları
+│   ├── gui/                # GUI bileşenleri
+│   ├── interfaces/         # İletişim arayüzleri
+│   ├── models/             # Veri modelleri
+│   ├── utils/              # Yardımcı araçlar
+│   ├── tests/              # Test betikleri
+│   └── docs/               # GUI dokümantasyonu
 ├── archive/                # Eski kodlar ve arşiv
-└── myenv/                  # Python sanal ortamı
+│   ├── GUI/                # Eski GUI versiyonları
+│   └── testBeforeGui/      # Eski test betikleri
+└── venv/                   # Python sanal ortamı (tek merkezi venv)
 ```
 
 ## 🚀 Kurulum
@@ -37,9 +49,13 @@ lab_instruments/
 1. Repository'yi klonlayın
 2. Sanal ortamı aktifleştirin:
    ```bash
-   source myenv/bin/activate
+   source venv/bin/activate
    ```
-3. Gerekli paketleri yükleyin (GUI klasöründe requirements.txt mevcut)
+3. Gerekli paketleri yükleyin:
+   ```bash
+   cd gui
+   pip install -r requirements.txt
+   ```
 
 ---
 
