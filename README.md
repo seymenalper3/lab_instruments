@@ -284,15 +284,51 @@ python apply_current_profile.py
 
 ## 📋 Veri Yapısı
 
+### 📁 Merkezi Veri Yönetimi
+
+Tüm veriler merkezi `data/` klasöründe organize edilir:
+
+```
+lab_instruments/
+└── data/
+    ├── logs/              # Tüm log dosyaları
+    │   ├── keithley_log_YYYYMMDD_HHMMSS.csv
+    │   └── monitoring_YYYYMMDD_HHMMSS.csv
+    └── test_results/      # Tüm test sonuçları
+        ├── pulse_bt_YYYYMMDD_HHMMSS.csv
+        ├── rest_evoc_YYYYMMDD_HHMMSS.csv
+        ├── battery_model_*.csv
+        └── keithley_analysis_*.csv
+```
+
+**Avantajlar:**
+- ✅ Tüm veriler tek merkezde
+- ✅ Kolay yedekleme ve arşivleme  
+- ✅ .gitignore ile otomatik ignore
+- ✅ Proje root'u temiz kalır
+
 ### Veri Dosyaları
 - **CSV**: Test sonuçları ve ölçüm verileri
 - **JSON**: Konfigürasyon ve metadata
 - **LOG**: Sistem logları ve hata kayıtları
 
 ### Dosya Adlandırma
-- `battery_test_YYYYMMDD_HHMMSS.csv`
-- `current_profile_YYYYMMDD_HHMMSS.log`
-- `pulse_test_YYYYMMDD_HHMMSS.json`
+- `data/test_results/battery_test_YYYYMMDD_HHMMSS.csv`
+- `data/logs/keithley_log_YYYYMMDD_HHMMSS.csv`
+- `data/test_results/pulse_test_YYYYMMDD_HHMMSS.csv`
+
+### Veri Erişimi
+```python
+from pathlib import Path
+
+# Test sonuçlarına erişim
+results_dir = Path('data/test_results')
+test_files = list(results_dir.glob('*.csv'))
+
+# Log dosyalarına erişim  
+log_dir = Path('data/logs')
+log_files = list(log_dir.glob('*.csv'))
+```
 
 ## 🛠️ Geliştirme
 

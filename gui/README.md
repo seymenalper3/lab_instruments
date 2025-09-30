@@ -178,11 +178,34 @@ voltage = controller.measure_voltage()
 
 ## 📈 Veri Loglama
 
+### 📁 Merkezi Veri Yönetimi
+
+Tüm log ve test verileri merkezi klasörlerde saklanır:
+
+```
+lab_instruments/
+└── data/
+    ├── logs/              # Tüm log dosyaları
+    │   └── keithley_log_YYYYMMDD_HHMMSS.csv
+    └── test_results/      # Tüm test sonuçları
+        ├── pulse_bt_YYYYMMDD_HHMMSS.csv
+        ├── rest_evoc_YYYYMMDD_HHMMSS.csv
+        ├── battery_model_*.csv
+        └── monitoring_*.csv
+```
+
+**Avantajları:**
+- ✅ Tüm veriler tek merkezde
+- ✅ Kolay yedekleme ve arşivleme
+- ✅ .gitignore ile otomatik ignore
+- ✅ Proje root'u temiz kalır
+
 ### Data Logger (data_logger.py)
 ```python
 from utils.data_logger import DataLogger
 
-logger = DataLogger("test_data.csv")
+logger = DataLogger()
+# Veriler otomatik olarak ../data/logs/ klasörüne kaydedilir
 logger.log_data({
     "timestamp": "2024-01-01 12:00:00",
     "voltage": 3.7,
@@ -191,10 +214,39 @@ logger.log_data({
 })
 ```
 
+### Keithley Logger (keithley_logger.py)
+```python
+from utils.keithley_logger import KeithleyLogger
+
+logger = KeithleyLogger()
+logger.start_timer()
+
+# Log measurements
+logger.log_measurement(
+    timestamp="2024-01-01 12:00:00",
+    voltage=3.7,
+    current=1.0,
+    mode="battery_test"
+)
+
+# Otomatik olarak ../data/logs/ klasörüne kaydedilir
+log_path = logger.save_log_csv()
+print(f"Log saved to: {log_path}")
+
+# Analysis export otomatik olarak ../data/test_results/ klasörüne kaydedilir
+analysis_path = logger.export_for_analysis()
+```
+
 ### Log Formatları
 - **CSV**: Tablo formatında veri
 - **JSON**: Structured data
 - **LOG**: Text tabanlı loglar
+
+### Dosya Konumları
+- **Loglar**: `data/logs/keithley_log_YYYYMMDD_HHMMSS.csv`
+- **Test Sonuçları**: `data/test_results/pulse_bt_YYYYMMDD_HHMMSS.csv`
+- **Battery Models**: `data/test_results/battery_model_slot*.csv`
+- **Monitoring Data**: `data/test_results/monitoring_*.csv`
 
 ## 🔧 Konfigürasyon
 
@@ -248,15 +300,44 @@ logger.log_data({
 
 ## 📋 Test Verileri
 
+### Veri Klasör Yapısı
+```
+lab_instruments/
+└── data/
+    ├── logs/              # Sistem ve cihaz logları
+    │   ├── keithley_log_20250930_120000.csv
+    │   └── monitoring_20250930_120000.csv
+    └── test_results/      # Tüm test sonuçları
+        ├── pulse_bt_20250930_152324.csv
+        ├── rest_evoc_20250930_152324.csv
+        ├── battery_model_slot1_20250930.csv
+        └── keithley_analysis_20250930.csv
+```
+
 ### Örnek Veri Dosyaları
-- `pulse_bt_20250627_152324.csv` - Pulse test verileri
-- `rest_evoc_20250627_152324.csv` - EVOC test verileri
+- `data/test_results/pulse_bt_*.csv` - Pulse test verileri
+- `data/test_results/rest_evoc_*.csv` - EVOC test verileri
+- `data/test_results/battery_model_*.csv` - Battery model exports
+- `data/logs/keithley_log_*.csv` - Keithley operation logs
 
 ### Veri Formatı
 ```csv
 timestamp,voltage,current,power,temperature
 2024-01-01 12:00:00,3.7,1.0,3.7,25.0
 2024-01-01 12:00:01,3.65,1.0,3.65,25.1
+```
+
+### Veri Erişimi
+```python
+from pathlib import Path
+
+# Log dosyalarına erişim
+log_dir = Path('data/logs')
+logs = list(log_dir.glob('*.csv'))
+
+# Test sonuçlarına erişim
+results_dir = Path('data/test_results')
+results = list(results_dir.glob('*.csv'))
 ```
 
 ## 📚 Dokümantasyon
