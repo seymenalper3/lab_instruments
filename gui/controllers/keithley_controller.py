@@ -452,18 +452,11 @@ class KeithleyController(BaseDeviceController):
                       i_rest: float = 0.0001,
                       sample_interval: float = 0.5) -> tuple:
         """
-        Run battery pulse test, with a check to prevent running over Ethernet.
+        Run battery pulse test.
         """
         if not self.connected:
             raise Exception("Device not connected")
         
-        # Check for Ethernet connection and prevent test run
-        if self.is_ethernet_connection():
-            raise Exception(
-                "Pulse test data logging is not supported over Ethernet due to instrument limitations. "
-                "Please use a USB connection for this test."
-            )
-            
         if self.busy:
             raise Exception("Device is busy with another operation")
             
@@ -1066,9 +1059,8 @@ class KeithleyController(BaseDeviceController):
         try:
             # Configure battery test for discharge (same as reference script)
             self.send_command(':BATT:TEST:MODE DIS')
-            self.send_command(f':BATT:TEST:CURR:LIM:SOUR {discharge_current}')
             self.send_command(':BATT:OUTP ON')
-            print(f"Output ON. Applying constant {discharge_current}A discharge...")
+            print("Output ON. Applying per-segment discharge sink current from profile...")
 
             # Calculate total discharge time
             total_duration = sum(segment['duration_s'] for segment in segments)
@@ -1076,16 +1068,20 @@ class KeithleyController(BaseDeviceController):
 
             for i, segment in enumerate(segments):
                 duration = segment['duration_s']
+                # Per-segment sink current magnitude from CSV (negative means discharge)
+                set_current = abs(float(segment.get('current_a', discharge_current)))
                 step_no = step_offset + i + 1
-                print(f"  -> Segment {step_no}: Waiting for {duration:.2f}s")
+                print(f"  -> Segment {step_no}: Set sink current {set_current:.3f}A for {duration:.2f}s")
+                # Apply sink limit for this segment
+                self.send_command(f':BATT:TEST:CURR:LIM:SINK {set_current}')
                 
                 # Skip individual measurements during Battery Test mode to avoid conflicts
                 # Log the segment with expected values instead
-                self.logger.log_segment(step_no, 'discharge', discharge_current, 
+                self.logger.log_segment(step_no, 'discharge', set_current, 
                                       None, None, self.logger.elapsed(), 'DISCHARGE_MODE')
                 
                 time.sleep(duration)
-                
+
             # Take one final measurement after all segments complete
             print("Taking final measurement after discharge batch...")
             try:
@@ -1096,7 +1092,7 @@ class KeithleyController(BaseDeviceController):
                     print(f"Final measurement: V={measured_v:.3f}V, I={measured_i:.3f}A")
                     # Log final measurement
                     final_step = step_offset + len(segments)
-                    self.logger.log_segment(final_step, 'discharge_final', discharge_current, 
+                    self.logger.log_segment(final_step, 'discharge_final', set_current, 
                                           measured_v, measured_i, self.logger.elapsed(), 'FINAL')
                 else:
                     print("Final measurement failed - continuing anyway")

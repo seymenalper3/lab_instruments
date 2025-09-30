@@ -26,6 +26,7 @@ class VISAInterface(DeviceInterface):
         """Establish VISA connection"""
         try:
             rm = pyvisa.ResourceManager()
+            print(f"VISA OPEN: {self.resource_string} (timeout {self.timeout}ms)")
             self.connection = rm.open_resource(self.resource_string)
             self.connection.timeout = self.timeout
             
@@ -40,7 +41,7 @@ class VISAInterface(DeviceInterface):
                 self.connection.read_termination = '\r\n'
                 self.connection.write_termination = '\r\n'
             else:
-                # Default for USBTMC, GPIB, etc.
+                # Default for USBTMC, TCPIP, GPIB, etc.
                 self.connection.read_termination = '\n'
                 self.connection.write_termination = '\n'
 

@@ -9,11 +9,12 @@ from interfaces.base_interface import DeviceInterface
 class EthernetInterface(DeviceInterface):
     """Ethernet TCP socket communication interface"""
     
-    def __init__(self, host, port, timeout=15):
+    def __init__(self, host, port, timeout=15, eol='\n'):
         super().__init__()
         self.host = host
         self.port = port
         self.timeout = timeout
+        self.eol = eol  # Line termination for SCPI over TCP (default "\n")
         
     def connect(self):
         """Establish ethernet connection"""
@@ -21,6 +22,11 @@ class EthernetInterface(DeviceInterface):
             self.connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.connection.settimeout(self.timeout)
             self.connection.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+            # Enable TCP keepalive (best-effort cross-platform)
+            try:
+                self.connection.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+            except Exception:
+                pass
             self.connection.connect((self.host, self.port))
             self.connected = True
             return True
@@ -37,26 +43,42 @@ class EthernetInterface(DeviceInterface):
         """Send command via ethernet"""
         if not self.connected:
             raise Exception("Not connected")
-        cmd = command.strip() + '\r\n'
+        cmd = command.strip() + self.eol
         self.connection.send(cmd.encode())
         
     def query(self, command):
         """Send command and read response via ethernet"""
-        self.write(command)
-        
-        # For buffer data queries that return large amounts of data, use specialized reading
-        if 'DATA:DATA?' in command.upper() or 'BUFFER' in command.upper():
+        # For buffer/trace queries that return large payloads, use specialized reader
+        upper = command.upper()
+        if ('DATA:DATA?' in upper) or ('BUFFER' in upper) or ('TRAC' in upper and '?' in upper):
+            self.write(command)
             return self._read_large_response()
         
-        # Simple response reading for small commands
-        response = self.connection.recv(8192).decode().strip()
+        self.write(command)
+        # Read until newline (SCPI terminator) or timeout
+        chunks = []
+        try:
+            self.connection.settimeout(self.timeout)
+            while True:
+                chunk = self.connection.recv(4096)
+                if not chunk:
+                    break
+                chunks.append(chunk)
+                if self.eol.encode() in chunk or chunk.endswith(b'\n'):
+                    break
+        except socket.timeout:
+            pass
+        finally:
+            # Restore default timeout
+            self.connection.settimeout(self.timeout)
+        response = b''.join(chunks).decode().strip()
         return response
     
     def _read_large_response(self):
         """Read potentially large responses in chunks"""
         response_parts = []
         original_timeout = self.timeout
-        self.connection.settimeout(5)  # Shorter timeout for buffer data
+        self.connection.settimeout(5)  # Shorter timeout for buffer data bursts
         
         try:
             # Read initial response
@@ -66,17 +88,17 @@ class EthernetInterface(DeviceInterface):
                 
             response_parts.append(initial_chunk.decode())
             
-            # Continue reading if there might be more data
-            # For Keithley buffer data, usually comes in one large chunk
+            # Continue reading while data keeps arriving
             try:
                 while True:
-                    self.connection.settimeout(0.5)  # Very short timeout for additional chunks
-                    chunk = self.connection.recv(4096)
+                    self.connection.settimeout(0.5)  # Very short timeout for trailing chunks
+                    chunk = self.connection.recv(8192)
                     if not chunk:
                         break
                     response_parts.append(chunk.decode())
             except socket.timeout:
-                pass  # Expected when no more data
+                # No more data available
+                pass
                 
         except socket.timeout:
             # If we timeout on initial read, there might be no data

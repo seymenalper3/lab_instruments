@@ -123,6 +123,7 @@ lab_instruments/
 
 1. **Uygulamayı başlatın:**
    ```cmd
+   .\venv\Scripts\Activate.ps1
    cd gui
    python main.py
    ```
@@ -240,6 +241,7 @@ SGX400 serisi cihazlar için test betikleri.
 
 ### GUI Başlatma
 ```bash
+.\venv\Scripts\Activate.ps1
 cd gui
 python main.py
 ```

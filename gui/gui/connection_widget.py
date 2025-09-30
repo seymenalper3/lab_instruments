@@ -256,7 +256,7 @@ class ConnectionWidget:
         info_dialog.geometry(f"450x300+{x}+{y}")
         
         # Title
-        title_label = ttk.Label(info_dialog, text="Keithley Ethernet Connection Setup", 
+        title_label = ttk.Label(info_dialog, text="Keithley IP Address Setup", 
                                font=("Arial", 12, "bold"))
         title_label.pack(pady=(10, 15))
         
@@ -343,7 +343,10 @@ Important Notes:
             port = int(self.port_entry.get())
             if not host:
                 raise ValueError("Please enter IP address")
-            return ConnectionConfig.create_ethernet(host, port)
+            # Use VISA TCPIP SOCKET with specified port (more universally supported)
+            # e.g., TCPIP0::169.254.92.105::5025::SOCKET
+            resource = f"TCPIP0::{host}::{port}::SOCKET"
+            return ConnectionConfig.create_visa(resource, timeout=10000)
             
         elif interface_type in [InterfaceType.USB.value, InterfaceType.GPIB.value]:
             resource = self.resource_entry.get().strip()
