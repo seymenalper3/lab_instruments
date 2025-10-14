@@ -536,12 +536,15 @@ class KeithleyController(BaseDeviceController):
             except Exception as e:
                 raise Exception(f"Failed to initialize device for pulse test: {e}")
             
-            # Create output files
+            # Create output files in logs directory
+            logs_dir = Path('./logs')
+            logs_dir.mkdir(exist_ok=True)
+
             stamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
-            pulse_file = f'pulse_bt_{stamp}.csv'
-            rest_file = f'rest_evoc_{stamp}.csv'
-            
-            print(f"Creating output files: {pulse_file}, {rest_file}")
+            pulse_file = logs_dir / f'pulse_bt_{stamp}.csv'
+            rest_file = logs_dir / f'rest_evoc_{stamp}.csv'
+
+            print(f"Creating output files in logs directory: {pulse_file.name}, {rest_file.name}")
             
             try:
                 with open(pulse_file, 'w', newline='') as fpulse, \
@@ -623,9 +626,11 @@ class KeithleyController(BaseDeviceController):
                             time.sleep(STEP)
                     
                     print("Pulse test completed successfully")
-                    
-                    # Return file paths
-                    return (pulse_file, rest_file)
+                    print(f"Data saved to: {pulse_file}")
+                    print(f"Data saved to: {rest_file}")
+
+                    # Return file paths (as strings)
+                    return (str(pulse_file), str(rest_file))
                     
             except Exception as e:
                 # Clean up on error - only turn off output
@@ -1077,13 +1082,30 @@ class KeithleyController(BaseDeviceController):
             for i, segment in enumerate(segments):
                 duration = segment['duration_s']
                 step_no = step_offset + i + 1
-                print(f"  -> Segment {step_no}: Waiting for {duration:.2f}s")
-                
-                # Skip individual measurements during Battery Test mode to avoid conflicts
-                # Log the segment with expected values instead
-                self.logger.log_segment(step_no, 'discharge', discharge_current, 
-                                      None, None, self.logger.elapsed(), 'DISCHARGE_MODE')
-                
+
+                # Take measurement at the beginning of each segment
+                measured_v, measured_i = None, None
+                try:
+                    # Brief delay to let device settle
+                    time.sleep(0.3)
+                    measured_v, measured_i, _ = self.measure_battery_data_buffer()
+                    if measured_v is not None and measured_i is not None:
+                        # Format current with 4 digits (e.g., 1.234A)
+                        print(f"  -> Segment {step_no}: Waiting for {duration:.2f}s | I={measured_i:.4f}A")
+                        # Log with measured current
+                        self.logger.log_segment(step_no, 'discharge', discharge_current,
+                                              measured_v, measured_i, self.logger.elapsed(), 'OK')
+                    else:
+                        print(f"  -> Segment {step_no}: Waiting for {duration:.2f}s (measurement unavailable)")
+                        # Log without measurement
+                        self.logger.log_segment(step_no, 'discharge', discharge_current,
+                                              None, None, self.logger.elapsed(), 'NO_MEASUREMENT')
+                except Exception as e:
+                    print(f"  -> Segment {step_no}: Waiting for {duration:.2f}s (measurement failed: {e})")
+                    # Log error
+                    self.logger.log_segment(step_no, 'discharge', discharge_current,
+                                          None, None, self.logger.elapsed(), f'MEAS_ERROR: {e}')
+
                 time.sleep(duration)
                 
             # Take one final measurement after all segments complete

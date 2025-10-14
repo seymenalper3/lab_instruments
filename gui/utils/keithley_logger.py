@@ -113,8 +113,22 @@ class KeithleyLogger:
             writer = csv.DictWriter(f, fieldnames=list(self.log[0].keys()))
             writer.writeheader()
             for row in self.log:
-                writer.writerow(row)
-                
+                # Format numeric values with appropriate precision
+                formatted_row = {}
+                for key, value in row.items():
+                    if key == 'measured_current_a' and isinstance(value, (int, float)):
+                        # Format current with 4 decimal places
+                        formatted_row[key] = f'{value:.4f}'
+                    elif key in ['measured_voltage_v', 'set_current_a'] and isinstance(value, (int, float)):
+                        # Format voltage and set current with 3 decimal places
+                        formatted_row[key] = f'{value:.3f}'
+                    elif key == 'elapsed_time_s' and isinstance(value, (int, float)):
+                        # Format elapsed time with 2 decimal places
+                        formatted_row[key] = f'{value:.2f}'
+                    else:
+                        formatted_row[key] = value
+                writer.writerow(formatted_row)
+
         return str(filepath)
     
     def clear_log(self):
