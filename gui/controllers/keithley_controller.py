@@ -45,15 +45,12 @@ class KeithleyController(BaseDeviceController):
         """Set current limit in amperes - mode dependent"""
         if current < 0 or current > self.device_spec.max_current:
             raise ValueError(f"Current must be between 0 and {self.device_spec.max_current}A")
-        
+
         # Use different commands based on current mode
         if self.current_mode == 'test':
-            # In Battery Test mode, use battery-specific commands
-            print(f"Setting Battery Test current to {current}A")
-            self.send_command(f':BATT:TEST:CURR:LIM:SOUR {current}')
-            self.send_command(f':BATT:TEST:CURR:END {current}')
-            # Set discharge mode if current is positive (for load testing)
-            self.send_command(':BATT:TEST:MODE DIS')
+            # In Battery Test mode, set I-Limit parameter
+            print(f"Setting Battery Test I-Limit to {current}A")
+            self.send_command(f':BATT:TEST:SENS:AH:ILIM {current}')
         else:
             # Power Supply mode
             cmd = self.device_spec.default_commands['set_current'].format(current)
@@ -650,7 +647,7 @@ class KeithleyController(BaseDeviceController):
             except:
                 pass
                 
-    def run_battery_model_test(self, 
+    def run_battery_model_test(self,
                           discharge_voltage: float = 3.0,
                           discharge_current_end: float = 0.4,
                           charge_vfull: float = 4.20,
@@ -662,7 +659,11 @@ class KeithleyController(BaseDeviceController):
                           export_csv: bool = True) -> dict:
         """
         Run complete battery model generation test
-        
+
+        This function follows the procedure from Keithley 2281S manual.
+        It will wait indefinitely until discharge and charge phases complete.
+        Total duration can be several hours depending on battery capacity.
+
         Args:
             discharge_voltage: End voltage for discharge (V)
             discharge_current_end: End current for discharge (A)
@@ -673,9 +674,13 @@ class KeithleyController(BaseDeviceController):
             v_min: Model voltage range minimum
             v_max: Model voltage range maximum
             export_csv: Whether to export model to CSV
-            
+
         Returns:
             Dictionary with test results and file paths
+
+        Note:
+            No timeout limits - test will run until battery reaches end conditions.
+            Progress is displayed every 30 seconds.
         """
         if not self.connected:
             raise Exception("Device not connected")
@@ -734,16 +739,15 @@ class KeithleyController(BaseDeviceController):
             self.send_command(f':BATT:TEST:CURR:END {discharge_current_end}')
             self.send_command(':BATT:OUTP ON')
             
-            # Wait for discharge to complete
+            # Wait for discharge to complete (no timeout - wait until finished)
             start_time = time.time()
-            max_discharge_time = 4 * 3600  # 4 hours max
-            
+
             while True:
                 # Check measurement status
                 try:
                     cond = int(self.query_command(':STAT:OPER:INST:ISUM:COND?'))
                     measuring = bool(cond & 0x10)
-                    
+
                     # Try to get voltage/current
                     try:
                         voltage = float(self.query_command(':BATT:VOLT?'))
@@ -752,16 +756,13 @@ class KeithleyController(BaseDeviceController):
                         print(f"Discharge progress: {elapsed/60:.1f} min | V: {voltage:.3f}V | I: {current:.3f}A")
                     except:
                         pass
-                        
+
                     if not measuring:
                         print(f"Discharge completed in {(time.time() - start_time)/60:.1f} minutes")
                         break
-                        
-                    if time.time() - start_time > max_discharge_time:
-                        raise TimeoutError("Discharge exceeded 4 hours")
-                        
+
                     time.sleep(30)  # Check every 30 seconds
-                    
+
                 except Exception as e:
                     print(f"Status check error: {e}")
                     time.sleep(5)
@@ -783,15 +784,14 @@ class KeithleyController(BaseDeviceController):
             self.send_command(':BATT:OUTP ON')
             self.send_command(':BATT:TEST:SENS:AH:EXEC STAR')
             
-            # Wait for charge to complete
+            # Wait for charge to complete (no timeout - wait until finished)
             start_time = time.time()
-            max_charge_time = 8 * 3600  # 8 hours max
-            
+
             while True:
                 try:
                     cond = int(self.query_command(':STAT:OPER:INST:ISUM:COND?'))
                     measuring = bool(cond & 0x10)
-                    
+
                     # Try to get voltage/current
                     try:
                         voltage = float(self.query_command(':BATT:VOLT?'))
@@ -800,16 +800,13 @@ class KeithleyController(BaseDeviceController):
                         print(f"Charge progress: {elapsed/60:.1f} min | V: {voltage:.3f}V | I: {current:.3f}A")
                     except:
                         pass
-                        
+
                     if not measuring:
                         print(f"Charge completed in {(time.time() - start_time)/60:.1f} minutes")
                         break
-                        
-                    if time.time() - start_time > max_charge_time:
-                        raise TimeoutError("Charge exceeded 8 hours")
-                        
+
                     time.sleep(30)  # Check every 30 seconds
-                    
+
                 except Exception as e:
                     print(f"Status check error: {e}")
                     time.sleep(5)
@@ -1141,30 +1138,37 @@ class KeithleyController(BaseDeviceController):
         """
         Execute current profile with automatic mode switching
         Based on reference script auto_mode_profile.py
-        
+
         Args:
             profile_path: Path to CSV profile file
             discharge_current: Constant discharge current (A) for negative segments
             charge_voltage: Charging voltage (V)
             protection_voltage: Protection voltage (V)
-            
+
         Returns:
             Path to log file if successful, None if failed
         """
         print(f"\n🚀 Starting current profile execution...")
         print(f"Profile: {profile_path}")
         print(f"Parameters: discharge={discharge_current}A, charge={charge_voltage}V")
-        
+
         if self.busy:
             error_msg = "Device is busy with another operation"
             print(f"Error: {error_msg}")
             raise Exception(error_msg)
-            
+
         # Check if connected
         if not self.connected:
             error_msg = "Device not connected"
             print(f"Error: {error_msg}")
             raise Exception(error_msg)
+
+        # Check for Ethernet connection and prevent test run
+        if self.is_ethernet_connection():
+            raise Exception(
+                "Current profile execution is not supported over Ethernet due to discharge measurement limitations. "
+                "Please use a USB connection for this test."
+            )
             
         # Test basic communication before starting
         print("Testing device communication...")
