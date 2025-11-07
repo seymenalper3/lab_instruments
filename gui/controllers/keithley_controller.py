@@ -442,14 +442,43 @@ class KeithleyController(BaseDeviceController):
                 power=None
             )
         
-    def run_pulse_test(self, pulses: int = 5, 
-                      pulse_time: float = 60.0, 
+    def run_pulse_test(self, pulses: int = 5,
+                      pulse_time: float = 60.0,
                       rest_time: float = 60.0,
                       i_pulse: float = 1.0,
                       i_rest: float = 0.0001,
                       sample_interval: float = 0.5) -> tuple:
         """
-        Run battery pulse test, with a check to prevent running over Ethernet.
+        Run battery pulse test to measure EVOC and ESR characteristics.
+
+        **IMPORTANT - Connection Requirement:**
+        This function REQUIRES a USB connection. Ethernet connections are NOT supported
+        due to instrument limitations with buffered data retrieval over TCP sockets.
+        The function will raise an exception if called over Ethernet.
+
+        **Platform Compatibility:**
+        - Linux: Fully supported (USB/GPIB via VISA)
+        - Windows: Fully supported (USB/GPIB via NI-VISA driver)
+        - Connection: USB or GPIB ONLY (NOT Ethernet)
+
+        Args:
+            pulses: Number of pulse cycles (1-100)
+            pulse_time: Duration of each pulse in seconds (1-300)
+            rest_time: Duration of rest period in seconds (1-300)
+            i_pulse: Pulse current in amperes (0.001 - max_current)
+            i_rest: Rest current in amperes (typically very small)
+            sample_interval: Data sampling interval in seconds
+
+        Returns:
+            tuple: (pulse_data_file, rest_data_file) - Paths to CSV files
+
+        Raises:
+            Exception: If device not connected, busy, or using Ethernet connection
+            ValueError: If parameters out of valid range
+
+        Note:
+            Data is saved to ./logs/pulse_bt_YYYYMMDD_HHMMSS.csv and
+            ./logs/rest_evoc_YYYYMMDD_HHMMSS.csv
         """
         if not self.connected:
             raise Exception("Device not connected")
@@ -1136,17 +1165,41 @@ class KeithleyController(BaseDeviceController):
     def run_current_profile(self, profile_path: str, discharge_current: float = 1.0,
                            charge_voltage: float = 4.2, protection_voltage: float = 4.3) -> Optional[str]:
         """
-        Execute current profile with automatic mode switching
-        Based on reference script auto_mode_profile.py
+        Execute current profile with automatic mode switching between charge and discharge.
+
+        **IMPORTANT - Connection Requirement:**
+        This function REQUIRES a USB connection. Ethernet connections are NOT supported
+        due to discharge measurement limitations with buffered data over TCP sockets.
+        The function will raise an exception if called over Ethernet.
+
+        **Platform Compatibility:**
+        - Linux: Fully supported (USB/GPIB via VISA)
+        - Windows: Fully supported (USB/GPIB via NI-VISA driver)
+        - Connection: USB or GPIB ONLY (NOT Ethernet)
+
+        **How it Works:**
+        - Reads current profile from CSV (columns: time_s, current_a)
+        - Automatically switches between Power Supply mode (charge) and Battery Test mode (discharge)
+        - Positive currents: Power Supply mode at specified voltage
+        - Negative currents: Battery Test mode at specified discharge current
+        - Logs all measurements to CSV file
 
         Args:
-            profile_path: Path to CSV profile file
-            discharge_current: Constant discharge current (A) for negative segments
-            charge_voltage: Charging voltage (V)
-            protection_voltage: Protection voltage (V)
+            profile_path: Path to CSV profile file with 'time_s' and 'current_a' columns
+            discharge_current: Constant discharge current in amperes (for negative segments)
+            charge_voltage: Charging voltage limit in volts
+            protection_voltage: Over-voltage protection limit in volts
 
         Returns:
             Path to log file if successful, None if failed
+
+        Raises:
+            Exception: If device not connected, busy, or using Ethernet connection
+            Exception: If profile file cannot be loaded
+
+        Note:
+            During execution, the device is marked as BUSY and monitoring is disabled.
+            Log file is saved to ./logs/keithley_log_YYYYMMDD_HHMMSS.csv
         """
         print(f"\n🚀 Starting current profile execution...")
         print(f"Profile: {profile_path}")

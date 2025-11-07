@@ -93,10 +93,19 @@ class AppLogger:
         self._setup_console_handler()
         self._setup_gui_handler()
 
-        # Log startup message
+        # Log startup message with platform information
+        import platform
         logging.info("="*60)
         logging.info("Logging system initialized")
         logging.info(f"Log directory: {self.log_dir.absolute()}")
+        logging.info(f"Platform: {platform.system()} {platform.release()} ({platform.machine()})")
+        logging.info(f"Python: {sys.version.split()[0]}")
+
+        # Windows-specific information
+        if sys.platform == 'win32':
+            logging.info(f"Windows version: {platform.win32_ver()[0]} {platform.win32_ver()[1]}")
+            logging.info("Running on Windows - Check firewall and driver settings if connection issues occur")
+
         logging.info("="*60)
 
     def _setup_file_handler(self):
@@ -239,6 +248,45 @@ class AppLogger:
         logger.info("="*60)
         logger.info(message)
         logger.info("="*60)
+
+    def log_platform_diagnostics(self):
+        """
+        Log platform-specific diagnostic information
+        Useful for debugging platform-specific issues
+        """
+        import platform
+        logger = logging.getLogger('diagnostics')
+
+        logger.info("Platform Diagnostics:")
+        logger.info(f"  OS: {platform.system()} {platform.release()}")
+        logger.info(f"  Platform: {platform.platform()}")
+        logger.info(f"  Machine: {platform.machine()}")
+        logger.info(f"  Processor: {platform.processor()}")
+        logger.info(f"  Python: {sys.version}")
+
+        # Windows-specific diagnostics
+        if sys.platform == 'win32':
+            logger.info("Windows-specific information:")
+            win_ver = platform.win32_ver()
+            logger.info(f"  Windows version: {win_ver[0]} {win_ver[1]}")
+            logger.info(f"  Service pack: {win_ver[2]}")
+
+            # Try to get additional Windows info
+            try:
+                import locale
+                logger.info(f"  System locale: {locale.getdefaultlocale()[0]}")
+            except:
+                pass
+
+            # Check for common Windows paths
+            import os
+            logger.info(f"  User directory: {Path.home()}")
+            logger.info(f"  Temp directory: {Path(os.environ.get('TEMP', 'N/A'))}")
+
+            logger.info("Windows troubleshooting tips:")
+            logger.info("  - VISA drivers: https://www.ni.com/en-us/support/downloads/drivers/download.ni-visa.html")
+            logger.info("  - COM ports: Check Device Manager (devmgmt.msc)")
+            logger.info("  - Firewall: Check Windows Firewall settings (firewall.cpl)")
 
 
 # Global instance
