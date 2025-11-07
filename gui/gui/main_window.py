@@ -6,6 +6,8 @@ import tkinter as tk
 from tkinter import ttk
 import sys
 import platform
+import os
+from PIL import Image, ImageTk
 from utils.app_logger import get_logger, get_app_logger
 from gui.sorensen_tab import SorensenTab
 from gui.keithley_tab import KeithleyTab
@@ -47,9 +49,12 @@ class MainWindow:
         """Create the main GUI"""
         logger.debug("Creating GUI components...")
 
+        # Create compact header with logo
+        self.create_header()
+
         # Create notebook for tabbed interface
         self.notebook = ttk.Notebook(self.root)
-        self.notebook.pack(fill='both', expand=True, padx=10, pady=10)
+        self.notebook.pack(fill='both', expand=True, padx=10, pady=(0, 10))
 
         # Create device tabs
         self.create_device_tabs()
@@ -61,7 +66,65 @@ class MainWindow:
         self.create_debug_console_tab()
 
         logger.debug("GUI components created successfully")
-        
+
+    def create_header(self):
+        """Create compact professional header with logo and title"""
+        logger.debug("Creating compact header...")
+
+        # Header frame - light gray background
+        header_frame = tk.Frame(self.root, bg='#f0f0f0', height=120)
+        header_frame.pack(fill='x', padx=0, pady=0)
+        header_frame.pack_propagate(False)  # Prevent frame from shrinking
+
+        try:
+            # Get the path to logo
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            logo_path = os.path.join(current_dir, '..', 'assets', 'logo.png')
+
+            # Load and resize logo (larger, more visible)
+            logo_image = Image.open(logo_path)
+            aspect_ratio = logo_image.width / logo_image.height
+            new_height = 100
+            new_width = int(new_height * aspect_ratio)
+            logo_image = logo_image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+
+            # Convert to PhotoImage
+            self.logo_photo = ImageTk.PhotoImage(logo_image)
+
+            # Create label with logo (left side)
+            logo_label = tk.Label(header_frame, image=self.logo_photo, bg='#f0f0f0')
+            logo_label.pack(side='left', padx=15, pady=10)
+
+            # Create title label (next to logo)
+            title_label = tk.Label(
+                header_frame,
+                text="Multi-Device Test Controller",
+                font=('Arial', 16, 'bold'),
+                bg='#f0f0f0',
+                fg='#2c3e50'
+            )
+            title_label.pack(side='left', padx=10, pady=10)
+
+            # Also set as window icon
+            icon_image = Image.open(logo_path)
+            icon_image = icon_image.resize((64, 64), Image.Resampling.LANCZOS)
+            self.icon_photo = ImageTk.PhotoImage(icon_image)
+            self.root.iconphoto(True, self.icon_photo)
+
+            logger.debug("Header created successfully")
+
+        except Exception as e:
+            logger.warning(f"Could not load logo: {e}")
+            # Fallback: just show title
+            fallback_label = tk.Label(
+                header_frame,
+                text="Multi-Device Test Controller",
+                font=('Arial', 16, 'bold'),
+                bg='#f0f0f0',
+                fg='#2c3e50'
+            )
+            fallback_label.pack(side='left', padx=20, pady=10)
+
     def create_device_tabs(self):
         """Create all device tabs"""
         logger.debug("Creating device tabs...")
