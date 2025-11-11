@@ -41,7 +41,7 @@ echo [3/6] Checking dependencies...
 python -c "import pyvisa; import serial; import pandas; import tkinter" >nul 2>&1
 if %errorlevel% neq 0 (
     echo Some dependencies are missing. Installing from requirements.txt...
-    python -m pip install -r requirements.txt
+    python -m pip install -r gui\requirements.txt
     if %errorlevel% neq 0 (
         echo ERROR: Failed to install dependencies
         pause

@@ -44,6 +44,18 @@ class MainWindow:
         self.center_window()
 
         logger.info("Main window initialized successfully")
+    
+    @staticmethod
+    def get_resource_path(relative_path):
+        """Get absolute path to resource, works for dev and for PyInstaller"""
+        try:
+            # PyInstaller creates a temp folder and stores path in _MEIPASS
+            base_path = sys._MEIPASS
+        except Exception:
+            # Not running as PyInstaller bundle, use normal path
+            base_path = os.path.abspath(".")
+        
+        return os.path.join(base_path, relative_path)
         
     def create_gui(self):
         """Create the main GUI"""
@@ -77,9 +89,8 @@ class MainWindow:
         header_frame.pack_propagate(False)  # Prevent frame from shrinking
 
         try:
-            # Get the path to logo
-            current_dir = os.path.dirname(os.path.abspath(__file__))
-            logo_path = os.path.join(current_dir, '..', 'assets', 'logo.png')
+            # Get the path to logo (works both in dev and PyInstaller)
+            logo_path = self.get_resource_path('gui/assets/logo.png')
 
             # Load and resize logo (larger, more visible)
             logo_image = Image.open(logo_path)
