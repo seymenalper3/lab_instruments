@@ -22,9 +22,9 @@ class ProdigitController(BaseDeviceController):
     """Prodigit 34205A Electronic Load Controller"""
 
     PROFILE_MIN_DWELL_S = 1.0
-    PROFILE_MAX_DURATION_S = 3600.0  # Guardrail for ~1 hour runs
+    PROFILE_MAX_DURATION_S = 14400.0  # Guardrail for ~4 hour runs
     PROFILE_SAFE_CURRENT_A = 120.0  # Conservative continuous current limit
-    PROFILE_MAX_SEGMENTS = 5000
+    PROFILE_MAX_SEGMENTS = 100000  # Support up to 100k segments (4h @ 5Hz)
 
     def __init__(self, interface):
         super().__init__(interface, DEVICE_SPECS[DeviceType.PRODIGIT_34205A])

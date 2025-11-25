@@ -6,7 +6,10 @@ import tkinter as tk
 from tkinter import ttk, messagebox, filedialog, scrolledtext
 from typing import Dict, List
 import time
+import logging
 from utils.data_logger import DataLogger
+
+logger = logging.getLogger(__name__)
 try:
     import matplotlib.pyplot as plt
     from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -24,11 +27,16 @@ class MonitoringTab:
         self.parent = parent
         self.data_logger = DataLogger()
         self.main_window = None  # Will be set by main window
+
+        # Dual-rate system: separate data collection and GUI update rates
+        self.sampling_rate_s = 1.0  # Data collection rate (default 1 Hz)
+        self.gui_update_rate_s = 1.0  # GUI refresh rate (default 1 Hz)
+
         self.create_tab()
-        
+
         # Auto-refresh devices periodically
         self.auto_refresh_devices()
-        
+
         # Start update cycle
         self.update_display()
         
@@ -39,31 +47,66 @@ class MonitoringTab:
         # Control frame
         control_frame = ttk.LabelFrame(self.frame, text="Monitoring Control")
         control_frame.pack(fill='x', padx=5, pady=5)
-        
-        # Sample interval
-        ttk.Label(control_frame, text="Sample Interval (s):").grid(row=0, column=0, sticky='w', padx=5, pady=2)
-        self.interval_entry = ttk.Entry(control_frame, width=10)
-        self.interval_entry.grid(row=0, column=1, padx=5, pady=2)
-        self.interval_entry.insert(0, "1.0")
-        self.interval_entry.bind('<KeyRelease>', self._on_interval_change)
-        
-        # Control buttons
-        self.monitor_btn = ttk.Button(control_frame, text="Start Monitoring", 
+
+        # Row 0: Data Sampling Rate (CSV logging frequency)
+        ttk.Label(control_frame, text="Data Sampling Rate (s):").grid(row=0, column=0, sticky='w', padx=5, pady=2)
+        self.sampling_rate_var = tk.StringVar(value="1.0")
+        self.sampling_rate_entry = ttk.Entry(control_frame, textvariable=self.sampling_rate_var, width=10)
+        self.sampling_rate_entry.grid(row=0, column=1, padx=5, pady=2)
+        self.sampling_rate_entry.bind('<KeyRelease>', self._on_sampling_rate_change)
+
+        # Info label for sampling rate
+        sampling_info = ttk.Label(control_frame, text="(Min: 0.2s = 5Hz max, device limit)",
+                                 foreground="gray", font=('TkDefaultFont', 8))
+        sampling_info.grid(row=0, column=2, columnspan=2, sticky='w', padx=5, pady=2)
+
+        # Row 1: GUI Update Rate (screen refresh frequency)
+        ttk.Label(control_frame, text="GUI Update Rate (s):").grid(row=1, column=0, sticky='w', padx=5, pady=2)
+        self.gui_update_var = tk.StringVar(value="1.0")
+        self.gui_update_entry = ttk.Entry(control_frame, textvariable=self.gui_update_var, width=10)
+        self.gui_update_entry.grid(row=1, column=1, padx=5, pady=2)
+        self.gui_update_entry.bind('<KeyRelease>', self._on_gui_update_rate_change)
+
+        # Info label for GUI rate
+        gui_info = ttk.Label(control_frame, text="(Screen refresh interval)",
+                            foreground="gray", font=('TkDefaultFont', 8))
+        gui_info.grid(row=1, column=2, columnspan=2, sticky='w', padx=5, pady=2)
+
+        # Row 2: Preset buttons
+        ttk.Label(control_frame, text="Presets:").grid(row=2, column=0, sticky='w', padx=5, pady=2)
+
+        preset_frame = ttk.Frame(control_frame)
+        preset_frame.grid(row=2, column=1, columnspan=5, sticky='w', padx=5, pady=2)
+
+        ttk.Button(preset_frame, text="Slow (5s)", width=12,
+                  command=lambda: self._apply_preset(5.0, 2.0)).pack(side='left', padx=2)
+        ttk.Button(preset_frame, text="Standard (1s)", width=12,
+                  command=lambda: self._apply_preset(1.0, 1.0)).pack(side='left', padx=2)
+        ttk.Button(preset_frame, text="Fast (0.5s)", width=12,
+                  command=lambda: self._apply_preset(0.5, 0.5)).pack(side='left', padx=2)
+        ttk.Button(preset_frame, text="Maximum (0.2s)", width=12,
+                  command=lambda: self._apply_preset(0.2, 1.0)).pack(side='left', padx=2)
+
+        # Row 3: Control buttons
+        button_frame = ttk.Frame(control_frame)
+        button_frame.grid(row=3, column=0, columnspan=6, sticky='ew', padx=5, pady=5)
+
+        self.monitor_btn = ttk.Button(button_frame, text="Start Monitoring",
                                     command=self.toggle_monitoring)
-        self.monitor_btn.grid(row=0, column=2, padx=5, pady=2)
-        
-        ttk.Button(control_frame, text="Save Data", 
-                  command=self.save_data).grid(row=0, column=3, padx=5, pady=2)
-                  
-        ttk.Button(control_frame, text="Clear Data", 
-                  command=self.clear_data).grid(row=0, column=4, padx=5, pady=2)
-                  
-        ttk.Button(control_frame, text="Refresh Devices", 
-                  command=self.refresh_devices).grid(row=0, column=5, padx=5, pady=2)
-        
+        self.monitor_btn.pack(side='left', padx=5)
+
+        ttk.Button(button_frame, text="Save Data",
+                  command=self.save_data).pack(side='left', padx=5)
+
+        ttk.Button(button_frame, text="Clear Data",
+                  command=self.clear_data).pack(side='left', padx=5)
+
+        ttk.Button(button_frame, text="Refresh Devices",
+                  command=self.refresh_devices).pack(side='left', padx=5)
+
         if MATPLOTLIB_AVAILABLE:
-            ttk.Button(control_frame, text="Plot Data", 
-                      command=self.plot_data).grid(row=0, column=6, padx=5, pady=2)
+            ttk.Button(button_frame, text="Plot Data",
+                      command=self.plot_data).pack(side='left', padx=5)
         
         # Status frame
         status_frame = ttk.LabelFrame(self.frame, text="Status")
@@ -162,18 +205,55 @@ class MonitoringTab:
     def remove_device(self, name: str):
         """Remove a device from monitoring"""
         self.data_logger.remove_device(name)
-        
+
         if name in self.measurement_widgets:
             self.measurement_widgets[name]['frame'].destroy()
             del self.measurement_widgets[name]
-            
-    def _on_interval_change(self, event=None):
-        """Handle sample interval change"""
+
+    def _on_sampling_rate_change(self, event=None):
+        """Handle data sampling rate change"""
         try:
-            interval = float(self.interval_entry.get())
-            self.data_logger.set_sample_interval(interval)
+            rate = float(self.sampling_rate_var.get())
+            if rate < 0.2:
+                logger.warning(f"Sampling rate {rate}s is below device limit (0.2s min = 5Hz max)")
+                self.status_label.config(text="Warning: Sampling rate below device limit (0.2s min)")
+            elif rate > 60.0:
+                logger.warning(f"Sampling rate {rate}s is too high (max 60s)")
+                self.status_label.config(text="Warning: Sampling rate too high (max 60s)")
+            else:
+                self.sampling_rate_s = rate
+                self.data_logger.set_sample_interval(rate)
+                logger.info(f"Data sampling rate set to {rate}s ({1.0/rate:.2f} Hz)")
         except ValueError:
             pass
+
+    def _on_gui_update_rate_change(self, event=None):
+        """Handle GUI update rate change"""
+        try:
+            rate = float(self.gui_update_var.get())
+            if rate < 0.1:
+                logger.warning(f"GUI update rate {rate}s is too fast (0.1s min)")
+                self.status_label.config(text="Warning: GUI update rate too fast (0.1s min)")
+            elif rate > 60.0:
+                logger.warning(f"GUI update rate {rate}s is too high (max 60s)")
+                self.status_label.config(text="Warning: GUI update rate too high (max 60s)")
+            else:
+                self.gui_update_rate_s = rate
+                logger.info(f"GUI update rate set to {rate}s ({1.0/rate:.2f} Hz)")
+        except ValueError:
+            pass
+
+    def _apply_preset(self, sampling_rate: float, gui_rate: float):
+        """Apply a preset configuration for sampling and GUI rates"""
+        self.sampling_rate_var.set(str(sampling_rate))
+        self.gui_update_var.set(str(gui_rate))
+
+        self.sampling_rate_s = sampling_rate
+        self.gui_update_rate_s = gui_rate
+        self.data_logger.set_sample_interval(sampling_rate)
+
+        logger.info(f"Applied preset: Sampling={sampling_rate}s ({1.0/sampling_rate:.2f}Hz), GUI={gui_rate}s")
+        self.status_label.config(text=f"Preset applied: Data={sampling_rate}s, GUI={gui_rate}s")
             
     def toggle_monitoring(self):
         """Start or stop monitoring"""
@@ -185,24 +265,51 @@ class MonitoringTab:
     def start_monitoring(self):
         """Start monitoring"""
         try:
-            interval = float(self.interval_entry.get())
-            self.data_logger.set_sample_interval(interval)
+            # Validate and set sampling rate
+            sampling_rate = float(self.sampling_rate_var.get())
+            if sampling_rate < 0.2:
+                messagebox.showerror("Error",
+                                   "Data sampling rate must be at least 0.2s (device communication limit = 5Hz max)")
+                return
+            if sampling_rate > 60.0:
+                messagebox.showerror("Error", "Data sampling rate must be 60 seconds or less")
+                return
+
+            # Validate and set GUI update rate
+            gui_rate = float(self.gui_update_var.get())
+            if gui_rate < 0.1:
+                messagebox.showerror("Error", "GUI update rate must be at least 0.1s")
+                return
+            if gui_rate > 60.0:
+                messagebox.showerror("Error", "GUI update rate must be 60 seconds or less")
+                return
+
+            # Apply rates
+            self.sampling_rate_s = sampling_rate
+            self.gui_update_rate_s = gui_rate
+            self.data_logger.set_sample_interval(sampling_rate)
             self.data_logger.start_monitoring()
-            
+
             self.monitor_btn.config(text="Stop Monitoring")
-            self.status_label.config(text="Monitoring active")
-            self.interval_entry.config(state="disabled")
-            
+            self.status_label.config(text=f"Monitoring: Data={sampling_rate}s, GUI={gui_rate}s")
+            self.sampling_rate_entry.config(state="disabled")
+            self.gui_update_entry.config(state="disabled")
+
+            logger.info(f"Monitoring started: Sampling={sampling_rate}s, GUI={gui_rate}s")
+
         except ValueError:
-            messagebox.showerror("Error", "Invalid sample interval")
+            messagebox.showerror("Error", "Invalid sampling or GUI update rate")
             
     def stop_monitoring(self):
         """Stop monitoring"""
         self.data_logger.stop_monitoring()
-        
+
         self.monitor_btn.config(text="Start Monitoring")
         self.status_label.config(text="Monitoring stopped")
-        self.interval_entry.config(state="normal")
+        self.sampling_rate_entry.config(state="normal")
+        self.gui_update_entry.config(state="normal")
+
+        logger.info("Monitoring stopped")
         
     def update_display(self):
         """Update monitoring display with new data"""
@@ -270,9 +377,10 @@ class MonitoringTab:
             
         except Exception as e:
             print(f"Display update error: {e}")
-            
-        # Schedule next update
-        self.parent.after(100, self.update_display)
+
+        # Schedule next update using GUI update rate
+        gui_update_ms = int(self.gui_update_rate_s * 1000)  # Convert seconds to milliseconds
+        self.parent.after(gui_update_ms, self.update_display)
         
     def _add_data_line(self, data_point: Dict):
         """Add a data line to the display"""
