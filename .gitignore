@@ -56,3 +56,6 @@ Thumbs.db
 deneme*.csv
 *_sample*.csv
 current_profile_*.csv
+
+# Project documentation (personal/local only)
+CLAUDE.md
