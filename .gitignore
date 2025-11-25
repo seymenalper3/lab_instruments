@@ -37,10 +37,13 @@ venv/
 env/
 ENV/
 .venv
+myenv/
 
-# IDE
+# IDE & AI Tools
 .vscode/
 .idea/
+.cursor/
+.claude/
 *.swp
 *.swo
 *~
@@ -48,3 +51,8 @@ ENV/
 # OS
 .DS_Store
 Thumbs.db
+
+# Test/Sample files
+deneme*.csv
+*_sample*.csv
+current_profile_*.csv

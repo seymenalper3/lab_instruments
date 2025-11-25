@@ -66,6 +66,27 @@ python main.py
 - **Özellikler**: Elektronik yük, güç analizi
 - **İletişim**: VISA, Modbus
 
+## Prodigit CC CSV Profilleri
+
+- CSV formatı `time_s,current_a` sütunlarını kullanır. `time_s` segment başlangıç zamanı, `current_a` ise CC set noktasıdır.
+- Prodigit kontrolleri `STAT:MODE CC`, `CURR:HIGH`, `STAT:LOAD ON/OFF` komut setiyle yürütülür (bkz. `docs/90034000A5_34000A series Operation Manual-rD.pdf`).
+- Guardrail'ler:
+  - Minimum segment süresi: **1 saniye**
+  - Maksimum toplam süre: **3600 saniye** (~1 saat)
+  - Sürekli akım limiti: **120 A** (cihazın 160 A nominal limitinin altında güvenli aralık)
+- GUI üzerinden çalışma:
+  1. Prodigit tab'ında bağlanın.
+  2. "CSV CC Profile" bölümünden dosya seçin ve **Load Profile** ile özet bilgileri kontrol edin.
+  3. Örnekleme periyodunu (varsayılan 1 s) belirleyip **Start** ile başlatın, **Stop** ile iptal edin.
+  4. Her saniye ölçümler `logs/prodigit_cc_*.csv` dosyalarına kaydedilir.
+- Donanım olmadan doğrulama için CLI/helper:
+
+```bash
+python gui/tests/test_prod_digit_profile.py your_profile.csv --sample-period 0.5
+```
+
+Bu komut mock bir kontrolcüyle profili simüle eder ve aynı log dosyasını üretir.
+
 ### Sorensen Cihazları
 - **Model**: XG serisi
 - **Özellikler**: Programlanabilir güç kaynağı
