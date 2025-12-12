@@ -100,7 +100,8 @@ DEVICE_SPECS = {
             'output_on': 'OUTP:STAT ON',
             'output_off': 'OUTP:STAT OFF',
             'measure_voltage': 'MEAS:VOLT?',
-            'measure_current': 'MEAS:CURR?'
+            'measure_current': 'MEAS:CURR?',
+            'query_error': 'SYST:ERR?'
         }
     ),
     
@@ -137,7 +138,8 @@ DEVICE_SPECS = {
             'remote_mode': 'SYST:REM',
             'local_mode': 'SYST:LOC',
             'clear': '*CLS',
-            'reset': '*RST'
+            'reset': '*RST',
+            'query_error': ':SYST:ERR?'
         }
     ),
     

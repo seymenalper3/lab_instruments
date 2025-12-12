@@ -2,10 +2,15 @@
 """
 Base device controller class
 """
+import time
+import logging
+import socket
 from abc import ABC, abstractmethod
 from typing import Optional
 from models.device_config import DeviceSpec, MeasurementData
 from interfaces.base_interface import DeviceInterface
+
+logger = logging.getLogger(__name__)
 
 
 class BaseDeviceController(ABC):
@@ -33,20 +38,43 @@ class BaseDeviceController(ABC):
             raise e
             
     def disconnect(self):
-        """Disconnect from the device"""
+        """Disconnect from the device with improved safety"""
+        # Try to turn off output with retry mechanism
+        output_closed = False
+        for attempt in range(3):
+            try:
+                if hasattr(self, 'output_off'):
+                    self.output_off()
+                    output_closed = True
+                    logger.debug("Output turned off during disconnect")
+                    break
+                if hasattr(self, 'load_off'):
+                    self.load_off()
+                    output_closed = True
+                    logger.debug("Load turned off during disconnect")
+                    break
+            except Exception as e:
+                if attempt == 2:  # Last attempt
+                    logger.error(f"Failed to turn off output during disconnect after 3 attempts: {e}")
+                else:
+                    time.sleep(0.1)  # Short delay before retry
+        
+        # Set to local mode if available
         try:
-            if hasattr(self, 'output_off'):
-                self.output_off()
-        except:
-            pass
-        try:
-            # Set to local mode if available
             if hasattr(self, 'local_mode'):
                 self.local_mode()
-        except:
-            pass
-        self.interface.disconnect()
-        self.connected = False
+                logger.debug("Device set to local mode")
+        except Exception as e:
+            logger.warning(f"Could not set device to local mode: {e}")
+        
+        # Disconnect interface
+        try:
+            self.interface.disconnect()
+            self.connected = False
+            logger.debug("Device disconnected successfully")
+        except Exception as e:
+            logger.error(f"Error during interface disconnect: {e}")
+            self.connected = False
         
     def identify(self):
         """Identify the device"""
@@ -98,14 +126,91 @@ class BaseDeviceController(ABC):
             power=self.measure_power()
         )
         
-    def send_command(self, command: str):
-        """Send command to device"""
-        if not self.connected:
-            raise Exception("Device not connected")
-        self.interface.write(command)
+    def _check_device_errors(self):
+        """Check for device errors after command execution"""
+        try:
+            # Try standard SCPI error query command
+            error_cmd = self.device_spec.default_commands.get('query_error', 'SYST:ERR?')
+            error_response = self.query_command(error_cmd)
+            
+            if error_response:
+                # Parse error response (format: "0,No error" or error code)
+                error_parts = error_response.split(',')
+                if len(error_parts) >= 1:
+                    error_code = error_parts[0].strip()
+                    # Error code 0 means no error
+                    if error_code != '0' and error_code.upper() != 'NO ERROR':
+                        error_msg = error_response if len(error_parts) == 1 else ','.join(error_parts[1:])
+                        logger.warning(f"Device error detected: {error_response}")
+                        # Don't raise exception, just log - let caller decide
+                        return error_response
+        except Exception as e:
+            # Error checking failed - don't block operation
+            logger.debug(f"Could not check device errors: {e}")
         
-    def query_command(self, command: str) -> str:
-        """Send command and get response"""
+        return None
+    
+    def _handle_timeout(self, operation: str):
+        """Handle timeout exception by attempting to turn off outputs for safety"""
+        logger.warning(f"Timeout occurred during {operation} - attempting safe shutdown")
+        try:
+            if hasattr(self, 'output_off'):
+                self.output_off()
+                logger.info("Output turned off after timeout")
+            if hasattr(self, 'load_off'):
+                self.load_off()
+                logger.info("Load turned off after timeout")
+        except Exception as e:
+            logger.error(f"Failed to turn off outputs after timeout: {e}")
+    
+    def send_command(self, command: str, check_errors: bool = False):
+        """Send command to device
+        
+        Args:
+            command: Command string to send
+            check_errors: If True, check for device errors after sending (default: False for performance)
+        """
         if not self.connected:
             raise Exception("Device not connected")
-        return self.interface.query(command)
+        
+        try:
+            self.interface.write(command)
+        except Exception as e:
+            # Check if it's a timeout exception
+            error_str = str(e).lower()
+            if 'timeout' in error_str or isinstance(e, (TimeoutError, socket.timeout)):
+                self._handle_timeout(f"send_command('{command}')")
+            raise
+        
+        # Optionally check for errors (disabled by default for performance)
+        if check_errors:
+            error = self._check_device_errors()
+            if error:
+                logger.warning(f"Device error after command '{command}': {error}")
+        
+    def query_command(self, command: str, check_errors: bool = False) -> str:
+        """Send command and get response
+        
+        Args:
+            command: Query command string
+            check_errors: If True, check for device errors after query (default: False for performance)
+        """
+        if not self.connected:
+            raise Exception("Device not connected")
+        
+        try:
+            response = self.interface.query(command)
+        except Exception as e:
+            # Check if it's a timeout exception
+            error_str = str(e).lower()
+            if 'timeout' in error_str or isinstance(e, (TimeoutError, socket.timeout)):
+                self._handle_timeout(f"query_command('{command}')")
+            raise
+        
+        # Optionally check for errors (disabled by default for performance)
+        if check_errors:
+            error = self._check_device_errors()
+            if error:
+                logger.warning(f"Device error after query '{command}': {error}")
+        
+        return response

@@ -34,20 +34,32 @@ class KeithleyTab(DeviceTab):
         self.mode_status_label.grid(row=0, column=2, columnspan=2, sticky='w', padx=10, pady=2)
         
         # Voltage setting
-        ttk.Label(self.control_frame, text="Voltage (V):").grid(row=1, column=0, sticky='w', padx=5, pady=2)
+        ttk.Label(self.control_frame, text=f"Voltage (V, max: {self.device_spec.max_voltage:.1f}):").grid(row=1, column=0, sticky='w', padx=5, pady=2)
         self.voltage_entry = ttk.Entry(self.control_frame, width=10)
         self.voltage_entry.grid(row=1, column=1, padx=5, pady=2)
         self.voltage_entry.insert(0, "0")
         
         # Current setting
-        ttk.Label(self.control_frame, text="Current (A):").grid(row=1, column=2, sticky='w', padx=5, pady=2)
+        ttk.Label(self.control_frame, text=f"Current (A, max: {self.device_spec.max_current:.1f}):").grid(row=1, column=2, sticky='w', padx=5, pady=2)
         self.current_entry = ttk.Entry(self.control_frame, width=10)
         self.current_entry.grid(row=1, column=3, padx=5, pady=2)
         self.current_entry.insert(0, "0")
         
+        # Output status indicator
+        status_frame = ttk.Frame(self.control_frame)
+        status_frame.grid(row=2, column=0, columnspan=4, pady=5)
+        ttk.Label(status_frame, text="Output Status:").pack(side='left', padx=5)
+        
+        # LED-like indicator using canvas
+        self.output_status_canvas = tk.Canvas(status_frame, width=20, height=20, highlightthickness=0)
+        self.output_status_canvas.pack(side='left', padx=5)
+        self.output_status_label = ttk.Label(status_frame, text="OFF", font=('Arial', 9))
+        self.output_status_label.pack(side='left', padx=5)
+        self._update_output_status_indicator(False)
+        
         # Control buttons
         btn_frame = ttk.Frame(self.control_frame)
-        btn_frame.grid(row=2, column=0, columnspan=4, pady=10)
+        btn_frame.grid(row=3, column=0, columnspan=4, pady=10)
         
         ttk.Button(btn_frame, text="Set Parameters & Mode", 
                   command=self.set_parameters).pack(side='left', padx=5)
@@ -56,9 +68,9 @@ class KeithleyTab(DeviceTab):
         ttk.Button(btn_frame, text="Output OFF", 
                   command=self.output_off).pack(side='left', padx=5)
         
-        # Test buttons
+        # Test buttons and Help
         test_frame = ttk.Frame(self.control_frame)
-        test_frame.grid(row=3, column=0, columnspan=4, pady=5)
+        test_frame.grid(row=4, column=0, columnspan=4, pady=5)
         
         ttk.Button(test_frame, text="Run Pulse Test", 
                   command=self.run_pulse_test).pack(side='left', padx=5)
@@ -66,10 +78,25 @@ class KeithleyTab(DeviceTab):
                   command=self.run_battery_model).pack(side='left', padx=5)
         ttk.Button(test_frame, text="Run Current Profile", 
                   command=self.run_current_profile).pack(side='left', padx=5)
+        ttk.Button(test_frame, text="❓ Help", 
+                  command=self.show_help).pack(side='left', padx=15)
+        
+        # Output format selection
+        format_frame = ttk.Frame(self.control_frame)
+        format_frame.grid(row=5, column=0, columnspan=4, pady=2, sticky='w', padx=5)
+        
+        ttk.Label(format_frame, text="Output Format:").pack(side='left', padx=5)
+        self.output_format_var = tk.StringVar(value="csv")
+        ttk.Radiobutton(format_frame, text="CSV (Fast)", 
+                       variable=self.output_format_var, value="csv").pack(side='left', padx=2)
+        ttk.Radiobutton(format_frame, text="Excel", 
+                       variable=self.output_format_var, value="xlsx").pack(side='left', padx=2)
+        ttk.Radiobutton(format_frame, text="Both", 
+                       variable=self.output_format_var, value="both").pack(side='left', padx=2)
                   
         # Current Profile parameters frame
         profile_frame = ttk.LabelFrame(self.control_frame, text="Current Profile Parameters")
-        profile_frame.grid(row=4, column=0, columnspan=4, sticky='ew', padx=5, pady=5)
+        profile_frame.grid(row=6, column=0, columnspan=4, sticky='ew', padx=5, pady=5)
         
         ttk.Label(profile_frame, text="Profile File:").grid(row=0, column=0, sticky='w', padx=5, pady=2)
         self.profile_file_var = tk.StringVar()
@@ -88,9 +115,14 @@ class KeithleyTab(DeviceTab):
         self.profile_charge_voltage_entry.grid(row=1, column=3, padx=5, pady=2)
         self.profile_charge_voltage_entry.insert(0, "4.2")
         
+        ttk.Label(profile_frame, text="Sample Period (s):").grid(row=2, column=0, sticky='w', padx=5, pady=2)
+        self.profile_sample_period_entry = ttk.Entry(profile_frame, width=10)
+        self.profile_sample_period_entry.grid(row=2, column=1, padx=5, pady=2)
+        self.profile_sample_period_entry.insert(0, "1.0")
+        
         # Pulse test parameters frame
         pulse_frame = ttk.LabelFrame(self.control_frame, text="Pulse Test Parameters")
-        pulse_frame.grid(row=5, column=0, columnspan=4, sticky='ew', padx=5, pady=5)
+        pulse_frame.grid(row=7, column=0, columnspan=4, sticky='ew', padx=5, pady=5)
         
         ttk.Label(pulse_frame, text="Pulses:").grid(row=0, column=0, sticky='w', padx=5, pady=2)
         self.pulses_entry = ttk.Entry(pulse_frame, width=8)
@@ -114,7 +146,7 @@ class KeithleyTab(DeviceTab):
         
         # Battery model parameters frame
         model_frame = ttk.LabelFrame(self.control_frame, text="Battery Model Parameters")
-        model_frame.grid(row=6, column=0, columnspan=4, sticky='ew', padx=5, pady=5)
+        model_frame.grid(row=8, column=0, columnspan=4, sticky='ew', padx=5, pady=5)
         
         # Discharge parameters
         ttk.Label(model_frame, text="Discharge End Voltage (V):").grid(row=0, column=0, sticky='w', padx=5, pady=2)
@@ -205,6 +237,18 @@ class KeithleyTab(DeviceTab):
             self.controller.set_voltage(voltage)
             self.controller.set_current_limit(current)
             
+            # Set voltage protection for Power Supply mode (safety requirement)
+            if func == "Power Supply" or func == "Battery Simulator":
+                # Set protection voltage to 10% above set voltage (minimum safety margin)
+                protection_voltage = voltage * 1.1
+                # Ensure protection doesn't exceed device max voltage
+                protection_voltage = min(protection_voltage, self.device_spec.max_voltage)
+                try:
+                    self.controller.send_command(f':SOUR:VOLT:PROT {protection_voltage}')
+                    print(f"Voltage protection set to {protection_voltage:.2f}V")
+                except Exception as e:
+                    print(f"Warning: Could not set voltage protection: {e}")
+            
             if mode_switched:
                 return f"Mode switched to {func} and parameters set successfully"
             else:
@@ -215,34 +259,245 @@ class KeithleyTab(DeviceTab):
             messagebox.showinfo("Success", result)
             
     def output_on(self):
-        """Turn output on"""
+        """Turn output on with safety checks"""
         def _output_on():
+            # Validate parameters before enabling output
+            voltage = float(self.voltage_entry.get())
+            current = float(self.current_entry.get())
+            
+            # Validate voltage range
+            if voltage < 0 or voltage > self.device_spec.max_voltage:
+                raise ValueError(f"Voltage ({voltage}V) out of range: 0-{self.device_spec.max_voltage}V")
+            
+            # Validate current range
+            if current < 0 or current > self.device_spec.max_current:
+                raise ValueError(f"Current ({current}A) out of range: 0-{self.device_spec.max_current}A")
+            
+            # Check power limit
+            power = voltage * current
+            if self.device_spec.max_power and power > self.device_spec.max_power:
+                raise ValueError(
+                    f"Power limit exceeded: {power:.1f}W > {self.device_spec.max_power}W. "
+                    f"Reduce voltage or current."
+                )
+            
+            # Safety confirmation for high values
+            HIGH_VOLTAGE_THRESHOLD = self.device_spec.max_voltage * 0.8
+            HIGH_CURRENT_THRESHOLD = self.device_spec.max_current * 0.8
+            HIGH_POWER_THRESHOLD = self.device_spec.max_power * 0.8 if self.device_spec.max_power else None
+            
+            needs_confirmation = (
+                voltage >= HIGH_VOLTAGE_THRESHOLD or
+                current >= HIGH_CURRENT_THRESHOLD or
+                (HIGH_POWER_THRESHOLD and power >= HIGH_POWER_THRESHOLD)
+            )
+            
+            if needs_confirmation:
+                confirm_msg = f"⚠️ HIGH VALUE WARNING ⚠️\n\n"
+                confirm_msg += f"You are about to enable output with:\n"
+                confirm_msg += f"  Voltage: {voltage}V (max: {self.device_spec.max_voltage}V)\n"
+                confirm_msg += f"  Current: {current}A (max: {self.device_spec.max_current}A)\n"
+                confirm_msg += f"  Power: {power:.1f}W"
+                if self.device_spec.max_power:
+                    confirm_msg += f" (max: {self.device_spec.max_power}W)\n"
+                else:
+                    confirm_msg += "\n"
+                confirm_msg += f"\nThese values are near the device limits.\n"
+                confirm_msg += f"Are you sure you want to proceed?"
+                
+                if not messagebox.askyesno("High Value Confirmation", confirm_msg, icon='warning'):
+                    return None  # User cancelled
+            
             self.controller.output_on()
+            self._update_output_status_indicator(True)
             return "Output turned ON"
             
         result = self.safe_execute(_output_on)
         if result:
             messagebox.showinfo("Success", result)
+        else:
+            self._update_output_status_indicator(False)
+    
+    def _update_output_status_indicator(self, is_on: bool):
+        """Update output status LED indicator"""
+        self.output_status_canvas.delete("all")
+        color = "#00ff00" if is_on else "#808080"  # Green if ON, Gray if OFF
+        self.output_status_canvas.create_oval(2, 2, 18, 18, fill=color, outline="black", width=1)
+        self.output_status_label.config(text="ON" if is_on else "OFF", 
+                                       foreground="green" if is_on else "gray")
             
     def output_off(self):
         """Turn output off"""
         def _output_off():
             self.controller.output_off()
+            self._update_output_status_indicator(False)
             return "Output turned OFF"
             
         result = self.safe_execute(_output_off)
         if result:
             messagebox.showinfo("Success", result)
+        else:
+            self._update_output_status_indicator(False)
     
     def browse_profile_file(self):
-        """Browse for current profile CSV file"""
+        """Browse for current profile file (CSV or Excel)"""
+        # Show format info first
+        info = ("📄 Current Profile Format\n\n"
+                "Supported formats: CSV (.csv) or Excel (.xlsx)\n\n"
+                "Required columns:\n"
+                "  • time_s: Time in seconds (start time of segment)\n"
+                "  • current_a: Current in Amperes\n"
+                "    - Positive values = Charging (Power Supply mode)\n"
+                "    - Negative values = Discharging (Battery Test mode)\n\n"
+                "Example:\n"
+                "  time_s | current_a\n"
+                "  0      | 1.5        (charge at 1.5A)\n"
+                "  60     | -1.0       (discharge at 1.0A)\n"
+                "  120    | 0.5        (charge at 0.5A)\n\n"
+                "Note: CSV loads faster (~4x) than Excel\n"
+                "For large profiles (>10K rows), prefer CSV\n\n"
+                "Output Files:\n"
+                "  logs/keithley_log_YYYYMMDD_HHMMSS.csv/.xlsx")
+        messagebox.showinfo("Profile Format Info", info)
+        
         file_path = filedialog.askopenfilename(
-            title="Select Current Profile CSV",
-            filetypes=[("CSV files", "*.csv"), ("All files", "*.*")],
+            title="Select Current Profile File",
+            filetypes=[
+                ("CSV files", "*.csv"),
+                ("Excel files", "*.xlsx"),
+                ("All files", "*.*")
+            ],
             initialdir="."
         )
         if file_path:
             self.profile_file_var.set(file_path)
+    
+    def show_help(self):
+        """Show Keithley help guide"""
+        help_window = tk.Toplevel(self.frame)
+        help_window.title("Keithley 2281S Help Guide")
+        help_window.geometry("750x600")
+        
+        from tkinter import scrolledtext
+        
+        help_text = """
+KEITHLEY 2281S BATTERY SIMULATOR HELP GUIDE
+
+═══════════════════════════════════════════════════════════
+
+🔌 BASIC CONTROLS
+
+Set Parameters & Mode:
+- Select mode: Power Supply, Battery Test, or Battery Simulator
+- Set voltage and current limits
+- Device automatically switches mode before applying settings
+
+Output ON/OFF:
+- Turn device output on or off
+- Safety checks validate parameters before enabling
+- Use "Monitoring & Logging" tab to record manual measurements
+
+═══════════════════════════════════════════════════════════
+
+🧪 TEST FUNCTIONS
+
+All test functions create automatic CSV logs in logs/ folder.
+During tests, device shows [BUSY] in Monitoring tab - this is normal!
+
+───────────────────────────────────────────────────────────
+
+1️⃣  RUN PULSE TEST
+
+Performs battery pulse discharge/rest cycles for impedance testing.
+
+Parameters:
+  • Pulses: Number of pulse cycles
+  • Pulse Time: Discharge duration (seconds)
+  • Rest Time: Rest/recovery duration (seconds)
+  • Pulse Current: Discharge current (Amperes)
+
+Output Files:
+  • logs/pulse_bt_YYYYMMDD_HHMMSS.csv (pulse data)
+  • logs/rest_evoc_YYYYMMDD_HHMMSS.csv (rest data)
+
+Note: Uses Battery Test mode automatically
+
+───────────────────────────────────────────────────────────
+
+2️⃣  GENERATE BATTERY MODEL
+
+Creates battery model from full discharge/charge cycle.
+
+Parameters:
+  • Discharge End Voltage: Stop discharge at this voltage
+  • Discharge End Current: Stop discharge at this current
+  • Charge Full Voltage: Target charge voltage
+  • Charge Current Limit: Maximum charge current
+  • ESR Interval: ESR measurement interval (seconds)
+  • Model Slot: Device memory slot (1-9)
+
+Output Files:
+  • logs/battery_model_data_YYYYMMDD_HHMMSS.csv (test data)
+  • battery_model_slot_X.csv (model file, if enabled)
+
+⚠️  WARNING: This test takes hours! Full discharge + charge cycle.
+
+───────────────────────────────────────────────────────────
+
+3️⃣  RUN CURRENT PROFILE
+
+Executes custom current profile with automatic mode switching.
+
+CSV Format:
+  time_s,current_a
+  0,1.5          # Charge at 1.5A (Power Supply mode)
+  60,-1.0        # Discharge at 1.0A (Battery Test mode)
+  120,0.5        # Charge at 0.5A (Power Supply mode)
+
+Parameters:
+  • Profile File: CSV with time_s and current_a columns
+  • Discharge Current: Constant current for negative segments
+  • Charge Voltage: Voltage limit for positive segments
+  • Sample Period: Measurement interval (default: 1s)
+
+Output File:
+  • logs/keithley_log_YYYYMMDD_HHMMSS.csv
+
+Features:
+  ✓ Automatic mode switching (positive→charge, negative→discharge)
+  ✓ Continuous measurements during execution
+  ✓ USB connection required (not Ethernet)
+
+═══════════════════════════════════════════════════════════
+
+📊 LOGGING BEHAVIOR
+
+Test Functions:
+  ✓ Create automatic CSV logs
+  ✗ Monitoring tab shows [BUSY] (can't measure during test)
+  ✓ Check logs/ folder after test completes
+
+Manual Operations (Set Parameters, Output ON/OFF):
+  ✗ No automatic logging
+  ✓ Use "Monitoring & Logging" tab to record data
+  ✓ Click "Start Monitoring" → "Save Data"
+
+═══════════════════════════════════════════════════════════
+
+💡 TIPS
+
+• Always check logs/ folder after tests complete
+• Use USB connection for profile tests (Ethernet not supported)
+• Battery Test mode discharges at ~1A (device limitation)
+• During tests, monitoring shows NULL - this is normal behavior
+        """
+        
+        text_widget = scrolledtext.ScrolledText(help_window, wrap=tk.WORD, font=('Courier', 9))
+        text_widget.pack(fill='both', expand=True, padx=10, pady=10)
+        text_widget.insert('1.0', help_text)
+        text_widget.config(state='disabled')
+        
+        ttk.Button(help_window, text="Close", command=help_window.destroy).pack(pady=10)
             
     def run_pulse_test(self):
         """Run battery pulse test"""
@@ -506,6 +761,8 @@ class KeithleyTab(DeviceTab):
             # Get profile parameters
             discharge_current = float(self.profile_discharge_current_entry.get())
             charge_voltage = float(self.profile_charge_voltage_entry.get())
+            sample_period = float(self.profile_sample_period_entry.get())
+            output_format = self.output_format_var.get()  # Get selected format
             
             # Estimate duration by loading profile
             try:
@@ -522,7 +779,9 @@ class KeithleyTab(DeviceTab):
             msg = f"Run current profile with:\n\n"
             msg += f"Profile: {Path(profile_path).name}\n"
             msg += f"Discharge Current: {discharge_current}A\n"
-            msg += f"Charge Voltage: {charge_voltage}V\n\n"
+            msg += f"Charge Voltage: {charge_voltage}V\n"
+            msg += f"Sample Period: {sample_period}s (measurements every {sample_period}s)\n"
+            msg += f"Output Format: {output_format.upper()}\n\n"
             msg += f"Estimated duration: {total_time/60:.0f} minutes\n\n"
             msg += "⚠️ This will automatically switch between Power Supply and Battery Test modes\n"
             msg += "Continue?"
@@ -540,7 +799,7 @@ class KeithleyTab(DeviceTab):
             # Run the profile in a separate thread
             profile_thread = threading.Thread(
                 target=self._run_current_profile_thread,
-                args=(profile_path, discharge_current, charge_voltage)
+                args=(profile_path, discharge_current, charge_voltage, sample_period, output_format)
             )
             profile_thread.daemon = True
             profile_thread.start()
@@ -555,14 +814,16 @@ class KeithleyTab(DeviceTab):
                             
             messagebox.showerror("Error", f"Current profile failed: {e}")
     
-    def _run_current_profile_thread(self, profile_path, discharge_current, charge_voltage):
+    def _run_current_profile_thread(self, profile_path, discharge_current, charge_voltage, sample_period=1.0, output_format='csv'):
         """Run current profile in background thread"""
         try:
             # Run the profile
             log_file = self.controller.run_current_profile(
                 profile_path=profile_path,
                 discharge_current=discharge_current,
-                charge_voltage=charge_voltage
+                charge_voltage=charge_voltage,
+                sample_period=sample_period,
+                output_format=output_format
             )
             
             # Schedule GUI update on main thread

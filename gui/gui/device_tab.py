@@ -89,6 +89,16 @@ class DeviceTab:
             return True
 
         except Exception as e:
+            # Safety: Try to turn off output if controller exists and is connected
+            if self.controller:
+                try:
+                    if hasattr(self.controller, 'output_off'):
+                        self.controller.output_off()
+                    if hasattr(self.controller, 'load_off'):
+                        self.controller.load_off()
+                except:
+                    pass  # Ignore errors during emergency shutdown
+            
             self.controller = None
             self.status_bar.config(text=f"Connection failed: {e}", style="Error.TLabel")
             messagebox.showerror("Connection Error", str(e))

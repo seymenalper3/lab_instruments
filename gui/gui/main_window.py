@@ -115,6 +115,22 @@ class MainWindow:
                 fg='#2c3e50'
             )
             title_label.pack(side='left', padx=10, pady=10)
+            
+            # Create emergency stop button (right side of header)
+            self.emergency_btn = tk.Button(
+                header_frame,
+                text="🛑 EMERGENCY STOP",
+                bg='#dc3545',
+                fg='white',
+                font=('Arial', 12, 'bold'),
+                relief='raised',
+                bd=3,
+                padx=20,
+                pady=10,
+                cursor='hand2',
+                command=self.emergency_stop_all
+            )
+            self.emergency_btn.pack(side='right', padx=15, pady=10)
 
             # Also set as window icon
             icon_image = Image.open(logo_path)
@@ -135,6 +151,22 @@ class MainWindow:
                 fg='#2c3e50'
             )
             fallback_label.pack(side='left', padx=20, pady=10)
+            
+            # Create emergency stop button even if logo fails
+            self.emergency_btn = tk.Button(
+                header_frame,
+                text="🛑 EMERGENCY STOP",
+                bg='#dc3545',
+                fg='white',
+                font=('Arial', 12, 'bold'),
+                relief='raised',
+                bd=3,
+                padx=20,
+                pady=10,
+                cursor='hand2',
+                command=self.emergency_stop_all
+            )
+            self.emergency_btn.pack(side='right', padx=15, pady=10)
 
     def create_device_tabs(self):
         """Create all device tabs"""
@@ -249,6 +281,48 @@ class MainWindow:
 
         logger.info("All cleanup completed, closing window")
         self.root.destroy()
+    
+    def emergency_stop_all(self):
+        """Turn off all device outputs immediately - Emergency Stop"""
+        logger.warning("EMERGENCY STOP activated - shutting down all device outputs")
+        
+        stopped_devices = []
+        failed_devices = []
+        
+        # Iterate through all device tabs
+        for name, tab in self.device_tabs.items():
+            if tab and tab.controller and tab.is_connected():
+                try:
+                    # Try to turn off output (for power supplies)
+                    if hasattr(tab.controller, 'output_off'):
+                        tab.controller.output_off()
+                        logger.info(f"Emergency stop: {name} output turned OFF")
+                    
+                    # Try to turn off load (for electronic loads)
+                    if hasattr(tab.controller, 'load_off'):
+                        tab.controller.load_off()
+                        logger.info(f"Emergency stop: {name} load turned OFF")
+                    
+                    stopped_devices.append(name)
+                except Exception as e:
+                    logger.error(f"Emergency stop failed for {name}: {e}")
+                    failed_devices.append(name)
+        
+        # Show result message
+        if stopped_devices:
+            msg = f"Emergency Stop Activated\n\n"
+            msg += f"Stopped: {', '.join(stopped_devices)}\n"
+            if failed_devices:
+                msg += f"\nFailed: {', '.join(failed_devices)}\n"
+                msg += "Please check device status manually."
+            else:
+                msg += "\nAll devices stopped successfully."
+            
+            from tkinter import messagebox
+            messagebox.showwarning("Emergency Stop", msg)
+        else:
+            from tkinter import messagebox
+            messagebox.showinfo("Emergency Stop", "No active devices found to stop.")
         
     def run(self):
         """Run the application"""

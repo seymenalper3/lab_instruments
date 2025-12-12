@@ -69,8 +69,18 @@ class ProdigitProfileLogger:
             'sample_period_s': _format_number(self.metadata.get('sample_period_s'), precision=2),
         })
 
-    def finalize(self, outcome: str, error_message: Optional[str] = None) -> str:
-        """Persist the log to disk and return the path."""
+    def finalize(self, outcome: str, error_message: Optional[str] = None, output_format: str = 'csv') -> list:
+        """
+        Persist the log to disk in selected format(s).
+        
+        Args:
+            outcome: Status of the profile execution
+            error_message: Optional error message
+            output_format: 'csv', 'xlsx', or 'both'
+            
+        Returns:
+            List of saved file paths
+        """
         if not self.rows:
             raise ValueError("No samples recorded for Prodigit CC profile.")
 
@@ -93,7 +103,10 @@ class ProdigitProfileLogger:
 
         log_dir = Path('./logs')
         log_dir.mkdir(exist_ok=True)
-        filepath = log_dir / (self.filename or f"prodigit_cc_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv")
+        base_filename = self.filename or f"prodigit_cc_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        
+        # Remove extension if present
+        base_filename = Path(base_filename).stem
 
         fieldnames = [
             'timestamp',
@@ -108,13 +121,39 @@ class ProdigitProfileLogger:
             'profile_path',
             'sample_period_s'
         ]
+        
+        saved_files = []
+        
+        # Save CSV
+        if output_format in ['csv', 'both']:
+            csv_filepath = log_dir / f"{base_filename}.csv"
+            with open(csv_filepath, 'w', newline='', encoding='utf-8') as csvfile:
+                writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+                writer.writeheader()
+                for row in self.rows:
+                    writer.writerow(row)
+                writer.writerow(summary_row)
+            saved_files.append(str(csv_filepath))
+            print(f"CSV saved: {csv_filepath}")
+        
+        # Save Excel
+        if output_format in ['xlsx', 'both']:
+            try:
+                import pandas as pd
+                import openpyxl
+                
+                xlsx_filepath = log_dir / f"{base_filename}.xlsx"
+                
+                # Convert to DataFrame
+                df = pd.DataFrame(self.rows + [summary_row])
+                df.to_excel(xlsx_filepath, index=False, engine='openpyxl')
+                
+                saved_files.append(str(xlsx_filepath))
+                print(f"Excel saved: {xlsx_filepath}")
+            except Exception as e:
+                print(f"Excel save failed: {e}")
+                if output_format == 'xlsx':  # Only xlsx requested but failed
+                    raise
 
-        with open(filepath, 'w', newline='', encoding='utf-8') as csvfile:
-            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-            writer.writeheader()
-            for row in self.rows:
-                writer.writerow(row)
-            writer.writerow(summary_row)
-
-        return str(filepath)
+        return saved_files
 

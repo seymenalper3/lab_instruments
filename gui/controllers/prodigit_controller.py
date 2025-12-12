@@ -69,6 +69,9 @@ class ProdigitController(BaseDeviceController):
 
     def set_current(self, current: float):
         """Set current in Amperes (for CC mode)."""
+        if self.is_busy():
+            raise RuntimeError("Cannot set current while profile is running. Stop profile first.")
+        
         if current < 0:
             raise ValueError("Constant current profiles must use non-negative values")
         if current > self.device_spec.max_current:
@@ -79,6 +82,9 @@ class ProdigitController(BaseDeviceController):
 
     def set_voltage(self, voltage: float):
         """Set voltage in Volts (for CV mode)."""
+        if self.is_busy():
+            raise RuntimeError("Cannot set voltage while profile is running. Stop profile first.")
+        
         if not 0 <= voltage <= self.device_spec.max_voltage:
             raise ValueError(f"Voltage must be between 0 and {self.device_spec.max_voltage}V")
         cmd = self.device_spec.default_commands['set_voltage'].format(voltage)
@@ -86,6 +92,9 @@ class ProdigitController(BaseDeviceController):
 
     def set_power(self, power: float):
         """Set power in Watts (for CP mode)."""
+        if self.is_busy():
+            raise RuntimeError("Cannot set power while profile is running. Stop profile first.")
+        
         if not 0 <= power <= self.device_spec.max_power:
             raise ValueError(f"Power must be between 0 and {self.device_spec.max_power}W")
         cmd = self.device_spec.default_commands['set_power'].format(power)
@@ -93,21 +102,32 @@ class ProdigitController(BaseDeviceController):
 
     def set_resistance(self, resistance: float):
         """Set resistance in Ohms (for CR mode)."""
-        # Add a reasonable upper limit for resistance if not specified
-        if not 0 <= resistance:
-             raise ValueError("Resistance must be a positive value")
+        if self.is_busy():
+            raise RuntimeError("Cannot set resistance while profile is running. Stop profile first.")
+        
+        # Safety: Add upper limit for resistance (1 MΩ = 1,000,000 Ω)
+        MAX_RESISTANCE_OHMS = 1_000_000.0
+        if not 0 < resistance <= MAX_RESISTANCE_OHMS:
+            raise ValueError(
+                f"Resistance must be between 0 and {MAX_RESISTANCE_OHMS/1_000_000:.1f} MΩ "
+                f"(0 and {MAX_RESISTANCE_OHMS:.0f} Ω)"
+            )
         cmd = self.device_spec.default_commands['set_resistance'].format(resistance)
         self.send_command(cmd)
 
     def load_on(self):
         """Turn load on."""
+        logger.warning("Turning load ON - safety critical operation")
         cmd = self.device_spec.default_commands['load_on']
-        self.send_command(cmd)
+        self.send_command(cmd, check_errors=True)
+        logger.info("Load turned ON successfully")
 
     def load_off(self):
         """Turn load off."""
+        logger.info("Turning load OFF")
         cmd = self.device_spec.default_commands['load_off']
-        self.send_command(cmd)
+        self.send_command(cmd, check_errors=True)
+        logger.info("Load turned OFF successfully")
 
     def measure_voltage(self) -> Optional[float]:
         """Read voltage measurement."""
@@ -170,7 +190,8 @@ class ProdigitController(BaseDeviceController):
 
     def load_current_profile(self, csv_path: str) -> Optional[pd.DataFrame]:
         """
-        Load and validate a current profile CSV for CC operation.
+        Load and validate a current profile from CSV or Excel file for CC operation.
+        Supports: .csv, .xlsx
         Expected columns: time_s, current_a
         """
         # Clear cache at start - will be repopulated if successful
@@ -182,7 +203,19 @@ class ProdigitController(BaseDeviceController):
             return None
 
         try:
-            df = pd.read_csv(path)
+            start_time = time.time()
+            
+            # Read file based on extension (optimized)
+            if str(path).endswith('.xlsx') or str(path).endswith('.xls'):
+                try:
+                    import openpyxl  # Lazy import
+                    df = pd.read_excel(path, engine='openpyxl')
+                    logger.info(f"Excel profile loaded in {time.time() - start_time:.2f}s")
+                except ImportError:
+                    raise Exception("Excel support requires openpyxl. Install: pip install openpyxl")
+            else:
+                df = pd.read_csv(path)
+                logger.info(f"CSV profile loaded in {time.time() - start_time:.2f}s")
         except Exception as exc:
             logger.error(f"Failed to read profile {csv_path}: {exc}")
             return None
@@ -257,15 +290,16 @@ class ProdigitController(BaseDeviceController):
         if self.is_busy():
             self._profile_abort_event.set()
 
-    def run_cc_profile(self, profile_path: str, sample_period: float = 1.0) -> Optional[str]:
+    def run_cc_profile(self, profile_path: str, sample_period: float = 1.0, output_format: str = 'csv') -> Optional[str]:
         """
         Execute a constant-current profile defined in a CSV file.
 
         Args:
             profile_path: Path to CSV with columns (time_s, current_a).
             sample_period: Interval in seconds between measurements/log entries.
+            output_format: Output format ('csv', 'xlsx', or 'both')
         Returns:
-            Path to the generated log file.
+            Path to the generated log file (first file if multiple).
         """
         if sample_period <= 0:
             raise ValueError("Sample period must be greater than 0.")
@@ -352,14 +386,17 @@ class ProdigitController(BaseDeviceController):
                         status='RUN'
                     )
 
-            log_path = profile_logger.finalize(outcome='COMPLETED')
+            log_paths = profile_logger.finalize(outcome='COMPLETED', output_format=output_format)
+            log_path = log_paths[0] if log_paths else None
             return log_path
 
         except InterruptedError as abort_exc:
-            log_path = profile_logger.finalize(outcome='ABORTED', error_message=str(abort_exc))
+            log_paths = profile_logger.finalize(outcome='ABORTED', error_message=str(abort_exc), output_format=output_format)
+            log_path = log_paths[0] if log_paths else None
             raise
         except Exception as exc:
-            log_path = profile_logger.finalize(outcome='ERROR', error_message=str(exc))
+            log_paths = profile_logger.finalize(outcome='ERROR', error_message=str(exc), output_format=output_format)
+            log_path = log_paths[0] if log_paths else None
             raise
         finally:
             # Attempt cleanup with multiple retries

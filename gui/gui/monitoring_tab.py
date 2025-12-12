@@ -118,6 +118,9 @@ class MonitoringTab:
         self.data_count_label = ttk.Label(status_frame, text="Data points: 0")
         self.data_count_label.grid(row=0, column=1, padx=20, pady=2)
         
+        # Help button
+        ttk.Button(status_frame, text="❓ Help", command=self.show_help, width=10).grid(row=0, column=2, padx=20, pady=2)
+        
         # Real-time measurements frame
         meas_frame = ttk.LabelFrame(self.frame, text="Real-time Measurements")
         meas_frame.pack(fill='x', padx=5, pady=5)
@@ -455,20 +458,86 @@ class MonitoringTab:
             self.data_display.see(tk.END)
             
     def save_data(self):
-        """Save monitoring data to CSV file"""
+        """Save monitoring data - user selects format"""
         if self.data_logger.get_data_count() == 0:
             messagebox.showwarning("Warning", "No data to save")
             return
-            
+        
+        # Format selection dialog
+        format_choice = messagebox.askyesnocancel(
+            "Save Format",
+            "Select output format:\n\n"
+            "Yes = Excel (.xlsx)\n"
+            "No = CSV (.csv)\n"
+            "Cancel = Both formats"
+        )
+        
+        if format_choice is None:  # Both
+            self._save_both_formats()
+        elif format_choice:  # Excel
+            self._save_excel()
+        else:  # CSV
+            self._save_csv()
+    
+    def _save_csv(self):
+        """Save as CSV only"""
         filename = filedialog.asksaveasfilename(
             defaultextension=".csv",
             filetypes=[("CSV files", "*.csv"), ("All files", "*.*")],
-            title="Save monitoring data"
+            title="Save monitoring data as CSV"
         )
         
         if filename:
             if self.data_logger.save_to_csv(filename):
                 messagebox.showinfo("Success", f"Data saved to {filename}")
+            else:
+                messagebox.showerror("Error", "Failed to save data")
+    
+    def _save_excel(self):
+        """Save as Excel only"""
+        filename = filedialog.asksaveasfilename(
+            defaultextension=".xlsx",
+            filetypes=[("Excel files", "*.xlsx"), ("All files", "*.*")],
+            title="Save monitoring data as Excel"
+        )
+        
+        if filename:
+            if self.data_logger.save_to_excel(filename):
+                messagebox.showinfo("Success", f"Data saved to {filename}")
+            else:
+                messagebox.showerror("Error", "Failed to save data")
+    
+    def _save_both_formats(self):
+        """Save as both CSV and Excel"""
+        from pathlib import Path
+        
+        filename = filedialog.asksaveasfilename(
+            defaultextension=".csv",
+            filetypes=[("CSV files", "*.csv"), ("All files", "*.*")],
+            title="Save monitoring data (both formats)"
+        )
+        
+        if filename:
+            # Save CSV
+            csv_saved = self.data_logger.save_to_csv(filename)
+            
+            # Save Excel with same base name
+            xlsx_filename = str(Path(filename).with_suffix('.xlsx'))
+            xlsx_saved = self.data_logger.save_to_excel(xlsx_filename)
+            
+            if csv_saved and xlsx_saved:
+                messagebox.showinfo("Success", 
+                    f"Data saved in both formats:\n\n"
+                    f"CSV: {filename}\n"
+                    f"Excel: {xlsx_filename}")
+            elif csv_saved:
+                messagebox.showwarning("Partial Success", 
+                    f"CSV saved: {filename}\n"
+                    f"Excel save failed: {xlsx_filename}")
+            elif xlsx_saved:
+                messagebox.showwarning("Partial Success", 
+                    f"Excel saved: {xlsx_filename}\n"
+                    f"CSV save failed: {filename}")
             else:
                 messagebox.showerror("Error", "Failed to save data")
                 
@@ -488,6 +557,81 @@ class MonitoringTab:
             
         # Schedule next auto-refresh in 5 seconds
         self.parent.after(5000, self.auto_refresh_devices)
+    
+    def show_help(self):
+        """Show monitoring & logging help"""
+        help_window = tk.Toplevel(self.parent)
+        help_window.title("Monitoring & Logging Help")
+        help_window.geometry("700x500")
+        
+        help_text = """
+MONITORING & LOGGING GUIDE
+
+═══════════════════════════════════════════════════════════
+
+📊 WHAT IS MONITORING?
+Monitoring allows you to collect real-time measurements from all connected devices
+simultaneously and save them to a CSV file for later analysis.
+
+═══════════════════════════════════════════════════════════
+
+🚀 HOW TO USE
+
+1. Connect Your Devices
+   - Make sure devices are connected in their respective tabs
+   - They will automatically appear in the monitoring list
+
+2. Configure Rates
+   - Data Sampling Rate: How often measurements are taken (min: 0.2s)
+   - GUI Update Rate: How often the screen refreshes (min: 0.1s)
+
+3. Start Monitoring
+   - Click "Start Monitoring" to begin collecting data
+   - Measurements appear in real-time below
+
+4. Save Your Data
+   - Click "Save Data" to export measurements to CSV
+   - You choose the filename and location
+
+═══════════════════════════════════════════════════════════
+
+⚠️ BUSY DEVICES & NULL VALUES
+
+When you see [BUSY] or NULL/-- values:
+- Device is running a test (Pulse Test, Battery Model, Current Profile, etc.)
+- Test functions create their own CSV files automatically in logs/ folder
+- This is NORMAL behavior - the test will save its own data
+
+During tests:
+✓ Test creates automatic CSV in logs/
+✗ Monitoring cannot access the device (shows NULL)
+
+═══════════════════════════════════════════════════════════
+
+📁 OUTPUT FILES
+
+Manual Monitoring:
+- You choose filename when clicking "Save Data"
+- Contains data from ALL connected devices
+
+Automatic Test Logs (logs/ folder):
+- Keithley Pulse Test: pulse_bt_*.csv, rest_evoc_*.csv
+- Keithley Battery Model: battery_model_data_*.csv
+- Keithley Current Profile: keithley_log_*.csv
+- Prodigit CC Profile: prodigit_cc_profile_*.csv
+
+═══════════════════════════════════════════════════════════
+
+💡 TIP: Use monitoring for manual operations (Set Parameters, Output ON/OFF).
+       Test functions save their own logs automatically!
+        """
+        
+        text_widget = scrolledtext.ScrolledText(help_window, wrap=tk.WORD, font=('Courier', 10))
+        text_widget.pack(fill='both', expand=True, padx=10, pady=10)
+        text_widget.insert('1.0', help_text)
+        text_widget.config(state='disabled')
+        
+        ttk.Button(help_window, text="Close", command=help_window.destroy).pack(pady=10)
     
     def plot_data(self):
         """Plot measurement data in a new window"""

@@ -6,12 +6,15 @@ Enhanced with reference script patterns from auto_mode_profile.py
 import csv
 import time
 import datetime
+import logging
 import pandas as pd
 from pathlib import Path
 from typing import Optional, Tuple, List, Dict, Any
 from controllers.base_controller import BaseDeviceController
 from models.device_config import DEVICE_SPECS, DeviceType
 from utils.keithley_logger import KeithleyLogger
+
+logger = logging.getLogger(__name__)
 
 
 class KeithleyController(BaseDeviceController):
@@ -22,11 +25,22 @@ class KeithleyController(BaseDeviceController):
         self.current_mode: Optional[str] = None  # Track current mode
         self.logger = KeithleyLogger()  # Structured logging
         self.mode_switch_delay = 3.0  # Delay after mode switch (seconds)
+        self._last_voltage: Optional[float] = None  # Track last set voltage for power calculation
+        self._last_current: Optional[float] = None  # Track last set current for power calculation
         
     def set_voltage(self, voltage: float):
         """Set output voltage in volts - mode dependent"""
         if voltage < 0 or voltage > self.device_spec.max_voltage:
             raise ValueError(f"Voltage must be between 0 and {self.device_spec.max_voltage}V")
+        
+        # Check power limit if we have current value
+        if self._last_current is not None and self.device_spec.max_power:
+            power = voltage * self._last_current
+            if power > self.device_spec.max_power:
+                raise ValueError(
+                    f"Power limit exceeded: {power:.1f}W > {self.device_spec.max_power}W. "
+                    f"Reduce voltage ({voltage}V) or current ({self._last_current}A)."
+                )
         
         # Use different commands based on current mode
         if self.current_mode == 'test':
@@ -41,10 +55,21 @@ class KeithleyController(BaseDeviceController):
             cmd = self.device_spec.default_commands['set_voltage'].format(voltage)
             self.send_command(cmd)
         
+        self._last_voltage = voltage
+        
     def set_current_limit(self, current: float):
         """Set current limit in amperes - mode dependent"""
         if current < 0 or current > self.device_spec.max_current:
             raise ValueError(f"Current must be between 0 and {self.device_spec.max_current}A")
+
+        # Check power limit if we have voltage value
+        if self._last_voltage is not None and self.device_spec.max_power:
+            power = self._last_voltage * current
+            if power > self.device_spec.max_power:
+                raise ValueError(
+                    f"Power limit exceeded: {power:.1f}W > {self.device_spec.max_power}W. "
+                    f"Reduce voltage ({self._last_voltage}V) or current ({current}A)."
+                )
 
         # Use different commands based on current mode
         if self.current_mode == 'test':
@@ -56,27 +81,33 @@ class KeithleyController(BaseDeviceController):
             cmd = self.device_spec.default_commands['set_current'].format(current)
             self.send_command(cmd)
         
+        self._last_current = current
+        
     def output_on(self):
         """Turn output on - mode dependent"""
+        logger.warning(f"Turning output ON (mode: {self.current_mode}) - safety critical operation")
         if self.current_mode == 'test':
             # In Battery Test mode, use battery output
-            print("Turning on Battery Test output")
-            self.send_command(':BATT:OUTP ON')
+            logger.info("Turning on Battery Test output")
+            self.send_command(':BATT:OUTP ON', check_errors=True)
         else:
             # Power Supply mode
             cmd = self.device_spec.default_commands['output_on']
-            self.send_command(cmd)
+            self.send_command(cmd, check_errors=True)
+        logger.info("Output turned ON successfully")
         
     def output_off(self):
         """Turn output off - mode dependent"""
+        logger.info(f"Turning output OFF (mode: {self.current_mode})")
         if self.current_mode == 'test':
             # In Battery Test mode, use battery output
-            print("Turning off Battery Test output")
-            self.send_command(':BATT:OUTP OFF')
+            logger.info("Turning off Battery Test output")
+            self.send_command(':BATT:OUTP OFF', check_errors=True)
         else:
             # Power Supply mode
             cmd = self.device_spec.default_commands['output_off']
-            self.send_command(cmd)
+            self.send_command(cmd, check_errors=True)
+        logger.info("Output turned OFF successfully")
         
     def battery_test_mode(self):
         """Switch to battery test function"""
@@ -103,17 +134,43 @@ class KeithleyController(BaseDeviceController):
             
         print("Switching to Power Supply mode...")
         try:
-            # Turn off any outputs first
+            # Turn off any outputs first and verify
+            output_off_success = False
             try:
                 self.send_command(self.device_spec.default_commands['output_off'])
                 time.sleep(0.2)
-            except:
-                pass
+                # Verify output is off
+                try:
+                    output_state = self.query_command(':OUTP?').strip()
+                    if output_state.upper() in ['0', 'OFF']:
+                        output_off_success = True
+                        print("Power Supply output verified OFF")
+                    else:
+                        print(f"Warning: Power Supply output may still be ON (state: {output_state})")
+                except:
+                    print("Warning: Could not verify Power Supply output state")
+            except Exception as e:
+                print(f"Warning: Failed to turn off Power Supply output: {e}")
+            
+            battery_output_off_success = False
             try:
                 self.send_command(self.device_spec.default_commands['battery_output_off'])
                 time.sleep(0.2)
-            except:
-                pass
+                # Verify battery output is off
+                try:
+                    battery_output_state = self.query_command(':BATT:OUTP?').strip()
+                    if battery_output_state.upper() in ['0', 'OFF']:
+                        battery_output_off_success = True
+                        print("Battery output verified OFF")
+                    else:
+                        print(f"Warning: Battery output may still be ON (state: {battery_output_state})")
+                except:
+                    print("Warning: Could not verify Battery output state")
+            except Exception as e:
+                print(f"Warning: Failed to turn off Battery output: {e}")
+            
+            if not output_off_success and not battery_output_off_success:
+                print("Warning: Could not verify that outputs are OFF before mode switch")
             
             # Clear any pending data
             self.send_command(self.device_spec.default_commands['clear'])
@@ -162,17 +219,43 @@ class KeithleyController(BaseDeviceController):
             
         print("Switching to Battery Test mode...")
         try:
-            # Turn off any outputs first
+            # Turn off any outputs first and verify
+            output_off_success = False
             try:
                 self.send_command(self.device_spec.default_commands['output_off'])
                 time.sleep(0.2)
-            except:
-                pass
+                # Verify output is off
+                try:
+                    output_state = self.query_command(':OUTP?').strip()
+                    if output_state.upper() in ['0', 'OFF']:
+                        output_off_success = True
+                        print("Power Supply output verified OFF")
+                    else:
+                        print(f"Warning: Power Supply output may still be ON (state: {output_state})")
+                except:
+                    print("Warning: Could not verify Power Supply output state")
+            except Exception as e:
+                print(f"Warning: Failed to turn off Power Supply output: {e}")
+            
+            battery_output_off_success = False
             try:
                 self.send_command(self.device_spec.default_commands['battery_output_off'])
                 time.sleep(0.2)
-            except:
-                pass
+                # Verify battery output is off
+                try:
+                    battery_output_state = self.query_command(':BATT:OUTP?').strip()
+                    if battery_output_state.upper() in ['0', 'OFF']:
+                        battery_output_off_success = True
+                        print("Battery output verified OFF")
+                    else:
+                        print(f"Warning: Battery output may still be ON (state: {battery_output_state})")
+                except:
+                    print("Warning: Could not verify Battery output state")
+            except Exception as e:
+                print(f"Warning: Failed to turn off Battery output: {e}")
+            
+            if not output_off_success and not battery_output_off_success:
+                print("Warning: Could not verify that outputs are OFF before mode switch")
             
             # Clear any pending data
             self.send_command(self.device_spec.default_commands['clear'])
@@ -957,8 +1040,8 @@ class KeithleyController(BaseDeviceController):
     
     def load_current_profile(self, csv_path: str) -> Optional[pd.DataFrame]:
         """
-        Load a current profile CSV and calculate segment durations
-        Based on reference script pattern
+        Load a current profile from CSV or Excel file and calculate segment durations
+        Supports: .csv, .xlsx
         """
         print(f"Loading profile from: {csv_path}")
         try:
@@ -966,10 +1049,20 @@ class KeithleyController(BaseDeviceController):
             if not Path(csv_path).exists():
                 print(f"Profile file not found: {csv_path}")
                 return None
-                
-            # Read CSV with error handling
-            df = pd.read_csv(csv_path)
-            print(f"CSV loaded with columns: {list(df.columns)}")
+            
+            start_time = time.time()
+            
+            # Read file based on extension (optimized)
+            if csv_path.endswith('.xlsx') or csv_path.endswith('.xls'):
+                try:
+                    import openpyxl  # Lazy import
+                    df = pd.read_excel(csv_path, engine='openpyxl')
+                    print(f"Excel loaded in {time.time() - start_time:.2f}s with columns: {list(df.columns)}")
+                except ImportError:
+                    raise Exception("Excel support requires openpyxl. Install: pip install openpyxl")
+            else:
+                df = pd.read_csv(csv_path)
+                print(f"CSV loaded in {time.time() - start_time:.2f}s with columns: {list(df.columns)}")
             
             # Check required columns
             if 'time_s' not in df.columns or 'current_a' not in df.columns:
@@ -1019,10 +1112,18 @@ class KeithleyController(BaseDeviceController):
             return None
     
     def run_charge_segments(self, segments: List[Dict], step_offset: int = 0, 
-                           charge_voltage: float = 4.2, protection_voltage: float = 4.3) -> bool:
+                           charge_voltage: float = 4.2, protection_voltage: float = 4.3,
+                           sample_period: float = 1.0) -> bool:
         """
         Execute charging segments in Power Supply mode
         Based on reference script pattern
+        
+        Args:
+            segments: List of segments to execute
+            step_offset: Offset for segment numbering
+            charge_voltage: Charging voltage limit
+            protection_voltage: Over-voltage protection limit
+            sample_period: Measurement interval in seconds (default: 1.0s)
         """
         if not self.connect_and_prep():
             return False
@@ -1031,7 +1132,7 @@ class KeithleyController(BaseDeviceController):
             print("Failed to switch to Power Supply mode, skipping charge segments")
             return False
 
-        print(f"--- Executing Batch of {len(segments)} CHARGE segments ---")
+        print(f"--- Executing Batch of {len(segments)} CHARGE segments (sampling every {sample_period}s) ---")
         try:
             # Configure voltage settings for Power Supply mode
             self.send_command(f':SOUR:VOLT {charge_voltage}')
@@ -1052,21 +1153,31 @@ class KeithleyController(BaseDeviceController):
                     self.send_command(':OUTP ON')
                     print(f"Output ON for charging")
                 
-                # Take measurement using reference script's approach
-                try:
-                    measured_v, measured_i = self.measure_voltage_current_combined()
-                    if measured_v is not None and measured_i is not None:
-                        print(f"    Measurement: V={measured_v:.3f}V, I={measured_i:.3f}A")
-                        self.logger.log_segment(step_no, 'charge', current, measured_v, measured_i, 
-                                              self.logger.elapsed(), 'OK')
-                    else:
-                        raise Exception("No measurement data received")
-                        
-                except Exception as e:
-                    print(f"    Measurement failed: {e}")
-                    self.logger.log_error(step_no, 'charge', str(e))
+                # Take measurements at regular intervals during the segment
+                elapsed_in_segment = 0.0
+                measurement_count = 0
+                while elapsed_in_segment < duration:
+                    try:
+                        measured_v, measured_i = self.measure_voltage_current_combined()
+                        if measured_v is not None and measured_i is not None:
+                            measurement_count += 1
+                            if measurement_count == 1 or measurement_count % 5 == 0:  # Print every 5th measurement
+                                print(f"    Measurement #{measurement_count}: V={measured_v:.3f}V, I={measured_i:.3f}A")
+                            self.logger.log_segment(step_no, 'charge', current, measured_v, measured_i, 
+                                                  self.logger.elapsed(), 'OK')
+                        else:
+                            print(f"    Measurement #{measurement_count + 1} failed: No data received")
+                            
+                    except Exception as e:
+                        print(f"    Measurement failed: {e}")
+                        self.logger.log_error(step_no, 'charge', str(e))
+                    
+                    # Sleep for sample period or remaining time, whichever is shorter
+                    sleep_time = min(sample_period, duration - elapsed_in_segment)
+                    time.sleep(sleep_time)
+                    elapsed_in_segment += sleep_time
                 
-                time.sleep(duration)
+                print(f"    Segment {step_no} complete: {measurement_count} measurements taken")
                 
         except Exception as e:
             print(f"ERROR during charge batch: {e}")
@@ -1081,10 +1192,16 @@ class KeithleyController(BaseDeviceController):
         return True
 
     def run_discharge_segments(self, segments: List[Dict], step_offset: int = 0, 
-                             discharge_current: float = 1.0) -> bool:
+                             discharge_current: float = 1.0, sample_period: float = 1.0) -> bool:
         """
         Execute discharge segments in Battery Test mode
         Based on reference script pattern
+        
+        Args:
+            segments: List of segments to execute
+            step_offset: Offset for segment numbering
+            discharge_current: Constant discharge current in amperes
+            sample_period: Measurement interval in seconds (default: 1.0s)
         """
         if not self.connect_and_prep():
             return False
@@ -1093,7 +1210,7 @@ class KeithleyController(BaseDeviceController):
             print("Failed to switch to Battery Test mode, skipping discharge segments")
             return False
 
-        print(f"--- Executing Batch of {len(segments)} DISCHARGE segments ---")
+        print(f"--- Executing Batch of {len(segments)} DISCHARGE segments (sampling every {sample_period}s) ---")
         try:
             # Configure battery test for discharge (same as reference script)
             self.send_command(':BATT:TEST:MODE DIS')
@@ -1108,36 +1225,44 @@ class KeithleyController(BaseDeviceController):
             for i, segment in enumerate(segments):
                 duration = segment['duration_s']
                 step_no = step_offset + i + 1
+                print(f"  -> Segment {step_no}: Discharging for {duration:.2f}s")
 
-                # Take measurement at the beginning of each segment
-                measured_v, measured_i = None, None
-                try:
-                    # Brief delay to let device settle
-                    time.sleep(0.3)
-                    measured_v, measured_i, _ = self.measure_battery_data_buffer()
-                    if measured_v is not None and measured_i is not None:
-                        # Format current with 4 digits (e.g., 1.234A)
-                        print(f"  -> Segment {step_no}: Waiting for {duration:.2f}s | I={measured_i:.4f}A")
-                        # Log with measured current
+                # Take measurements at regular intervals during the segment
+                elapsed_in_segment = 0.0
+                measurement_count = 0
+                
+                # Initial settling delay
+                time.sleep(0.3)
+                
+                while elapsed_in_segment < duration:
+                    try:
+                        measured_v, measured_i, _ = self.measure_battery_data_buffer()
+                        if measured_v is not None and measured_i is not None:
+                            measurement_count += 1
+                            if measurement_count == 1 or measurement_count % 5 == 0:  # Print every 5th measurement
+                                print(f"    Measurement #{measurement_count}: V={measured_v:.3f}V, I={measured_i:.4f}A")
+                            # Log with measured current
+                            self.logger.log_segment(step_no, 'discharge', discharge_current,
+                                                  measured_v, measured_i, self.logger.elapsed(), 'OK')
+                        else:
+                            print(f"    Measurement #{measurement_count + 1} failed: No data received")
+                            self.logger.log_segment(step_no, 'discharge', discharge_current,
+                                                  None, None, self.logger.elapsed(), 'NO_MEASUREMENT')
+                    except Exception as e:
+                        print(f"    Measurement failed: {e}")
                         self.logger.log_segment(step_no, 'discharge', discharge_current,
-                                              measured_v, measured_i, self.logger.elapsed(), 'OK')
-                    else:
-                        print(f"  -> Segment {step_no}: Waiting for {duration:.2f}s (measurement unavailable)")
-                        # Log without measurement
-                        self.logger.log_segment(step_no, 'discharge', discharge_current,
-                                              None, None, self.logger.elapsed(), 'NO_MEASUREMENT')
-                except Exception as e:
-                    print(f"  -> Segment {step_no}: Waiting for {duration:.2f}s (measurement failed: {e})")
-                    # Log error
-                    self.logger.log_segment(step_no, 'discharge', discharge_current,
-                                          None, None, self.logger.elapsed(), f'MEAS_ERROR: {e}')
-
-                time.sleep(duration)
+                                              None, None, self.logger.elapsed(), f'MEAS_ERROR: {e}')
+                    
+                    # Sleep for sample period or remaining time, whichever is shorter
+                    sleep_time = min(sample_period, duration - elapsed_in_segment)
+                    time.sleep(sleep_time)
+                    elapsed_in_segment += sleep_time
+                
+                print(f"    Segment {step_no} complete: {measurement_count} measurements taken")
                 
             # Take one final measurement after all segments complete
             print("Taking final measurement after discharge batch...")
             try:
-                # Brief delay to let device settle
                 time.sleep(0.5)
                 measured_v, measured_i, rel_time = self.measure_battery_data_buffer()
                 if measured_v is not None and measured_i is not None:
@@ -1163,7 +1288,8 @@ class KeithleyController(BaseDeviceController):
         return True
     
     def run_current_profile(self, profile_path: str, discharge_current: float = 1.0,
-                           charge_voltage: float = 4.2, protection_voltage: float = 4.3) -> Optional[str]:
+                           charge_voltage: float = 4.2, protection_voltage: float = 4.3,
+                           sample_period: float = 1.0, output_format: str = 'csv') -> Optional[str]:
         """
         Execute current profile with automatic mode switching between charge and discharge.
 
@@ -1182,6 +1308,7 @@ class KeithleyController(BaseDeviceController):
         - Automatically switches between Power Supply mode (charge) and Battery Test mode (discharge)
         - Positive currents: Power Supply mode at specified voltage
         - Negative currents: Battery Test mode at specified discharge current
+        - Takes measurements at regular intervals (sample_period) during execution
         - Logs all measurements to CSV file
 
         Args:
@@ -1189,6 +1316,7 @@ class KeithleyController(BaseDeviceController):
             discharge_current: Constant discharge current in amperes (for negative segments)
             charge_voltage: Charging voltage limit in volts
             protection_voltage: Over-voltage protection limit in volts
+            sample_period: Measurement interval in seconds (default: 1.0s)
 
         Returns:
             Path to log file if successful, None if failed
@@ -1203,7 +1331,7 @@ class KeithleyController(BaseDeviceController):
         """
         print(f"\n🚀 Starting current profile execution...")
         print(f"Profile: {profile_path}")
-        print(f"Parameters: discharge={discharge_current}A, charge={charge_voltage}V")
+        print(f"Parameters: discharge={discharge_current}A, charge={charge_voltage}V, sample_period={sample_period}s")
 
         if self.busy:
             error_msg = "Device is busy with another operation"
@@ -1255,6 +1383,7 @@ class KeithleyController(BaseDeviceController):
         print(f"\n🚀 Starting profile execution with AUTOMATIC mode switching...")
         print(f"Total segments: {len(profile_df)}")
         print(f"Mode switch delay: {self.mode_switch_delay}s")
+        print(f"Sample period: {sample_period}s (measurements taken every {sample_period}s)")
 
         try:
             last_mode = None
@@ -1276,10 +1405,10 @@ class KeithleyController(BaseDeviceController):
                     
                     if last_mode == 'charge':
                         success = self.run_charge_segments(segment_chunk, step_offset, 
-                                                         charge_voltage, protection_voltage)
+                                                         charge_voltage, protection_voltage, sample_period)
                     else:
                         success = self.run_discharge_segments(segment_chunk, step_offset, 
-                                                            discharge_current)
+                                                            discharge_current, sample_period)
                     
                     if not success:
                         print(f"Failed to execute {last_mode} segments")
@@ -1294,9 +1423,15 @@ class KeithleyController(BaseDeviceController):
                 
                 last_mode = current_mode
 
-            # Save log
-            log_file = self.logger.save_log_csv()
-            print(f"\n✅✅✅ Profile execution completed. Log saved to: {log_file} ✅✅✅")
+            # Save log with selected format
+            log_files = self.logger.save_log(format=output_format)
+            log_file = log_files[0] if log_files else None
+            if len(log_files) > 1:
+                print(f"\n✅✅✅ Profile execution completed. Logs saved:")
+                for f in log_files:
+                    print(f"  - {f}")
+            else:
+                print(f"\n✅✅✅ Profile execution completed. Log saved to: {log_file} ✅✅✅")
             return log_file
             
         except KeyboardInterrupt:

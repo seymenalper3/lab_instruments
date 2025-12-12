@@ -170,6 +170,31 @@ class DataLogger:
         except Exception as e:
             print(f"Error saving CSV: {e}")
             return False
+    
+    def save_to_excel(self, filename: str) -> bool:
+        """Save measurement data to Excel file"""
+        try:
+            if not self.measurement_data:
+                return False
+            
+            # Lazy import
+            try:
+                import openpyxl
+            except ImportError:
+                print("Error: openpyxl not installed. Install: pip install openpyxl")
+                return False
+            
+            # Create DataFrame from data
+            df = pd.DataFrame(self.measurement_data)
+            
+            # Save to Excel (simple format for speed)
+            df.to_excel(filename, index=False, engine='openpyxl')
+            print(f"Data saved to {filename}")
+            return True
+            
+        except Exception as e:
+            print(f"Error saving Excel data: {e}")
+            return False
             
     def get_data_count(self) -> int:
         """Get number of stored data points"""

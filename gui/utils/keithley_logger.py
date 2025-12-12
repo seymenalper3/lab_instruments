@@ -131,6 +131,84 @@ class KeithleyLogger:
 
         return str(filepath)
     
+    def save_log_excel(self, filename: Optional[str] = None) -> str:
+        """
+        Save log to Excel file - same data as CSV
+        
+        Args:
+            filename: Optional filename, if None generates timestamp-based name
+            
+        Returns:
+            Path to saved file
+        """
+        if not self.log:
+            raise ValueError("No log data to save")
+        
+        # Lazy import
+        try:
+            import pandas as pd
+            import openpyxl
+        except ImportError:
+            raise Exception("Excel support requires pandas and openpyxl")
+        
+        if filename is None:
+            ts = datetime.now().strftime('%Y%m%d_%H%M%S')
+            filename = f'keithley_log_{ts}.xlsx'
+        
+        # Ensure logs directory exists
+        log_dir = Path('./logs')
+        log_dir.mkdir(exist_ok=True)
+        filepath = log_dir / filename
+        
+        # Convert to DataFrame
+        df = pd.DataFrame(self.log)
+        
+        # Save to Excel
+        df.to_excel(filepath, index=False, engine='openpyxl')
+        
+        return str(filepath)
+    
+    def save_log(self, format='csv', filename: Optional[str] = None) -> list:
+        """
+        Save log in specified format(s)
+        
+        Args:
+            format: 'csv', 'xlsx', or 'both'
+            filename: Optional base filename (without extension)
+            
+        Returns:
+            List of saved file paths
+        """
+        if not self.log:
+            raise ValueError("No log data to save")
+        
+        files = []
+        
+        # Generate base filename if not provided
+        if filename is None:
+            ts = datetime.now().strftime('%Y%m%d_%H%M%S')
+            base_name = f'keithley_log_{ts}'
+        else:
+            # Remove extension if provided
+            base_name = str(Path(filename).stem)
+        
+        if format in ['csv', 'both']:
+            csv_file = self.save_log_csv(f'{base_name}.csv')
+            files.append(csv_file)
+            print(f"CSV saved: {csv_file}")
+        
+        if format in ['xlsx', 'both']:
+            try:
+                xlsx_file = self.save_log_excel(f'{base_name}.xlsx')
+                files.append(xlsx_file)
+                print(f"Excel saved: {xlsx_file}")
+            except Exception as e:
+                print(f"Excel save failed: {e}")
+                if format == 'xlsx':  # Only xlsx requested but failed
+                    raise
+        
+        return files
+    
     def clear_log(self):
         """Clear the log data"""
         self.log.clear()

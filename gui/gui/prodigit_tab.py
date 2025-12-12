@@ -20,6 +20,7 @@ class ProdigitTab(DeviceTab):
     """Prodigit 34205A control tab"""
 
     def __init__(self, parent):
+        # Mode labels will be updated after device_spec is available
         self.mode_labels = {
             "CC": "Current (A):",
             "CV": "Voltage (V):",
@@ -34,6 +35,14 @@ class ProdigitTab(DeviceTab):
         self.profile_status_var = None
         super().__init__(parent, DEVICE_SPECS[DeviceType.PRODIGIT_34205A], ProdigitController)
         self.is_load_on = False
+        
+        # Update mode labels with device limits
+        self.mode_labels = {
+            "CC": f"Current (A, max: {self.device_spec.max_current:.1f}):",
+            "CV": f"Voltage (V, max: {self.device_spec.max_voltage:.0f}):",
+            "CP": f"Power (W, max: {self.device_spec.max_power:.0f}):",
+            "CR": "Resistance (Ω, max: 1.0 MΩ):"
+        }
 
     def _show_error(self, title: str, message: str, use_statusbar: bool = False):
         """Standardized error display."""
@@ -71,9 +80,21 @@ class ProdigitTab(DeviceTab):
         self.value_entry.grid(row=0, column=3, padx=5, pady=2)
         self.value_entry.insert(0, "0.0")
 
+        # Load status indicator
+        load_status_frame = ttk.Frame(self.control_frame)
+        load_status_frame.grid(row=1, column=0, columnspan=4, pady=5)
+        ttk.Label(load_status_frame, text="Load Status:").pack(side='left', padx=5)
+        
+        # LED-like indicator using canvas
+        self.load_status_canvas = tk.Canvas(load_status_frame, width=20, height=20, highlightthickness=0)
+        self.load_status_canvas.pack(side='left', padx=5)
+        self.load_status_label_text = ttk.Label(load_status_frame, text="OFF", font=('Arial', 9))
+        self.load_status_label_text.pack(side='left', padx=5)
+        self._update_load_status_indicator(False)
+        
         # Control buttons
         btn_frame = ttk.Frame(self.control_frame)
-        btn_frame.grid(row=1, column=0, columnspan=4, pady=10)
+        btn_frame.grid(row=2, column=0, columnspan=4, pady=10)
 
         self.set_params_btn = ttk.Button(btn_frame, text="Set Parameters", command=self.set_parameters)
         self.set_params_btn.pack(side='left', padx=5)
@@ -83,26 +104,58 @@ class ProdigitTab(DeviceTab):
 
         self.load_off_btn = ttk.Button(btn_frame, text="Load OFF", command=self.load_off)
         self.load_off_btn.pack(side='left', padx=5)
-
+        
+        ttk.Button(btn_frame, text="❓ Help", command=self.show_help).pack(side='left', padx=15)
+        
         # Status display section
         status_frame = ttk.Frame(self.control_frame)
-        status_frame.grid(row=2, column=0, columnspan=4, pady=(10, 5), sticky='w')
+        status_frame.grid(row=3, column=0, columnspan=4, pady=(10, 5), sticky='w')
         self.mode_status_label = ttk.Label(status_frame, text="Mode: --", font=("TkDefaultFont", 9, "italic"))
         self.mode_status_label.pack(side='left', padx=5)
         self.load_status_label = ttk.Label(status_frame, text="Load: --", font=("TkDefaultFont", 9, "italic"))
         self.load_status_label.pack(side='left', padx=5)
+        
+        # Output format selection
+        format_frame = ttk.Frame(self.control_frame)
+        format_frame.grid(row=4, column=0, columnspan=4, sticky='w', padx=5, pady=2)
+        
+        ttk.Label(format_frame, text="Profile Output Format:").pack(side='left', padx=5)
+        self.output_format_var = tk.StringVar(value="csv")
+        ttk.Radiobutton(format_frame, text="CSV (Fast)", 
+                       variable=self.output_format_var, value="csv").pack(side='left', padx=2)
+        ttk.Radiobutton(format_frame, text="Excel", 
+                       variable=self.output_format_var, value="xlsx").pack(side='left', padx=2)
+        ttk.Radiobutton(format_frame, text="Both", 
+                       variable=self.output_format_var, value="both").pack(side='left', padx=2)
 
         # CSV profile controls
         self._create_profile_controls()
+    
+    def _update_load_status_indicator(self, is_on: bool):
+        """Update load status LED indicator"""
+        self.load_status_canvas.delete("all")
+        color = "#00ff00" if is_on else "#808080"  # Green if ON, Gray if OFF
+        self.load_status_canvas.create_oval(2, 2, 18, 18, fill=color, outline="black", width=1)
+        self.load_status_label_text.config(text="ON" if is_on else "OFF", 
+                                          foreground="green" if is_on else "gray")
 
     def _on_mode_change(self, event=None):
         """Update value label when mode changes."""
         mode = self.mode_combo.get()
-        self.value_label.config(text=self.mode_labels[mode])
+        # Update label with limit information
+        if mode in self.mode_labels:
+            self.value_label.config(text=self.mode_labels[mode])
 
     def set_parameters(self):
         """Set the appropriate parameter based on the selected mode."""
         def _set_params():
+            # Safety check: Cannot set parameters while profile is running
+            if self.controller.is_busy():
+                raise RuntimeError(
+                    "Cannot set parameters while profile is running. "
+                    "Please stop the profile first."
+                )
+            
             mode = self.mode_combo.get()
             value = float(self.value_entry.get())
 
@@ -126,9 +179,88 @@ class ProdigitTab(DeviceTab):
             self._show_success(result, use_statusbar=True, show_popup=True)
 
     def load_on(self):
-        """Turn load on and start monitoring."""
+        """Turn load on and start monitoring with safety checks."""
         def _task():
+            # Safety check: Cannot enable load while profile is running
+            if self.controller.is_busy():
+                raise RuntimeError(
+                    "Cannot enable load while profile is running. "
+                    "Please stop the profile first."
+                )
+            
+            mode = self.mode_combo.get()
+            value = float(self.value_entry.get())
+            
+            # Safety check: Cannot enable load with zero value
+            if value == 0.0:
+                raise ValueError(
+                    "Cannot enable load with zero value. Please set parameters first using 'Set Parameters' button."
+                )
+            
+            # Validate value based on mode and device limits
+            if mode == "CC":
+                if value < 0 or value > self.device_spec.max_current:
+                    raise ValueError(f"Current ({value}A) out of range: 0-{self.device_spec.max_current}A")
+            elif mode == "CV":
+                if value < 0 or value > self.device_spec.max_voltage:
+                    raise ValueError(f"Voltage ({value}V) out of range: 0-{self.device_spec.max_voltage}V")
+            elif mode == "CP":
+                if value < 0 or value > self.device_spec.max_power:
+                    raise ValueError(f"Power ({value}W) out of range: 0-{self.device_spec.max_power}W")
+            elif mode == "CR":
+                if value <= 0:
+                    raise ValueError("Resistance must be a positive value")
+            
+            # Safety confirmation for high values
+            needs_confirmation = False
+            confirm_msg = ""
+            
+            if mode == "CC":
+                HIGH_CURRENT_THRESHOLD = self.device_spec.max_current * 0.8
+                if value >= HIGH_CURRENT_THRESHOLD:
+                    needs_confirmation = True
+                    confirm_msg = f"⚠️ HIGH CURRENT WARNING ⚠️\n\n"
+                    confirm_msg += f"You are about to enable load with:\n"
+                    confirm_msg += f"  Current: {value}A (max: {self.device_spec.max_current}A)\n"
+            elif mode == "CV":
+                HIGH_VOLTAGE_THRESHOLD = self.device_spec.max_voltage * 0.8
+                if value >= HIGH_VOLTAGE_THRESHOLD:
+                    needs_confirmation = True
+                    confirm_msg = f"⚠️ HIGH VOLTAGE WARNING ⚠️\n\n"
+                    confirm_msg += f"You are about to enable load with:\n"
+                    confirm_msg += f"  Voltage: {value}V (max: {self.device_spec.max_voltage}V)\n"
+            elif mode == "CP":
+                HIGH_POWER_THRESHOLD = self.device_spec.max_power * 0.8
+                if value >= HIGH_POWER_THRESHOLD:
+                    needs_confirmation = True
+                    confirm_msg = f"⚠️ HIGH POWER WARNING ⚠️\n\n"
+                    confirm_msg += f"You are about to enable load with:\n"
+                    confirm_msg += f"  Power: {value}W (max: {self.device_spec.max_power}W)\n"
+            
+            if needs_confirmation:
+                confirm_msg += f"\nThis value is near the device limit.\n"
+                confirm_msg += f"Are you sure you want to proceed?"
+                
+                from tkinter import messagebox
+                if not messagebox.askyesno("High Value Confirmation", confirm_msg, icon='warning'):
+                    return None  # User cancelled
+            
+            # Ensure mode and value are set before enabling load
+            if mode == "CC":
+                self.controller.set_mode_cc()
+                self.controller.set_current(value)
+            elif mode == "CV":
+                self.controller.set_mode_cv()
+                self.controller.set_voltage(value)
+            elif mode == "CP":
+                self.controller.set_mode_cp()
+                self.controller.set_power(value)
+            elif mode == "CR":
+                self.controller.set_mode_cr()
+                self.controller.set_resistance(value)
+            
             self.controller.load_on()
+            self._update_load_status_indicator(True)
             return "Load turned ON. Monitoring started."
 
         result = self.safe_execute(_task)
@@ -138,11 +270,19 @@ class ProdigitTab(DeviceTab):
             self._show_success(result, use_statusbar=True, show_popup=False)
             self.is_load_on = True
             self._update_measurements()
+        else:
+            self._update_load_status_indicator(False)
 
     def load_off(self):
         """Turn load off and stop monitoring."""
         def _task():
+            # Note: load_off is allowed even during profile (for emergency stop)
+            # But we log it if profile is running
+            if self.controller.is_busy():
+                logger.warning("Load turned OFF while profile is running")
+            
             self.controller.load_off()
+            self._update_load_status_indicator(False)
             return "Load turned OFF. Monitoring stopped."
 
         result = self.safe_execute(_task)
@@ -151,6 +291,8 @@ class ProdigitTab(DeviceTab):
             self.is_load_on = False
             # Reset labels after a short delay to allow the last update to clear
             self.frame.after(100, self._reset_measurement_labels)
+        else:
+            self._update_load_status_indicator(False)
 
     def _update_measurements(self):
         """Periodically update measurement readings from the device."""
@@ -231,7 +373,7 @@ class ProdigitTab(DeviceTab):
     def _create_profile_controls(self):
         """Create CSV profile runner controls."""
         profile_frame = ttk.LabelFrame(self.control_frame, text="CSV CC Profile")
-        profile_frame.grid(row=3, column=0, columnspan=4, pady=(15, 5), sticky='ew')
+        profile_frame.grid(row=5, column=0, columnspan=4, pady=(15, 5), sticky='ew')
         profile_frame.columnconfigure(1, weight=1)
 
         self.profile_path_var = tk.StringVar()
@@ -276,13 +418,165 @@ class ProdigitTab(DeviceTab):
         )
 
     def _browse_profile(self):
-        """Select a CSV profile file."""
+        """Select a profile file (CSV or Excel)."""
+        # Show format info first
+        info = ("📄 CC Profile Format\n\n"
+                "Supported formats: CSV (.csv) or Excel (.xlsx)\n\n"
+                "Required columns:\n"
+                "  • time_s: Time in seconds (start time of segment)\n"
+                "  • current_a: Current in Amperes\n\n"
+                "Duration is calculated automatically from time differences\n\n"
+                "Example:\n"
+                "  time_s | current_a\n"
+                "  0      | 5.0        (5A for 10s)\n"
+                "  10     | 10.0       (10A for 20s)\n"
+                "  30     | 2.5        (2.5A for 30s)\n"
+                "  60     | 0.0        (0A - end)\n\n"
+                "Note: CSV loads faster (~4x) than Excel\n"
+                "For large profiles (>10K rows), prefer CSV\n\n"
+                "Output Files:\n"
+                "  logs/prodigit_cc_profile_YYYYMMDD_HHMMSS.csv/.xlsx")
+        messagebox.showinfo("Profile Format Info", info)
+        
         path = filedialog.askopenfilename(
-            title="Select Prodigit CSV profile",
-            filetypes=[("CSV Files", "*.csv"), ("All files", "*.*")]
+            title="Select Prodigit Profile File",
+            filetypes=[
+                ("CSV files", "*.csv"),
+                ("Excel files", "*.xlsx"),
+                ("All files", "*.*")
+            ]
         )
         if path:
             self.profile_path_var.set(path)
+    
+    def show_help(self):
+        """Show Prodigit help guide"""
+        help_window = tk.Toplevel(self.frame)
+        help_window.title("Prodigit 34205A Help Guide")
+        help_window.geometry("750x600")
+        
+        from tkinter import scrolledtext
+        
+        help_text = """
+PRODIGIT 34205A ELECTRONIC LOAD HELP GUIDE
+
+═══════════════════════════════════════════════════════════
+
+⚡ OPERATING MODES
+
+The Prodigit can operate in four constant modes:
+
+CC - Constant Current:
+  Load draws specified current regardless of voltage
+  Use for: Battery discharge testing, power supply loading
+
+CV - Constant Voltage:
+  Load maintains specified voltage
+  Use for: Voltage regulation testing
+
+CP - Constant Power:
+  Load maintains specified power (P = V × I)
+  Use for: Power supply testing under constant power
+
+CR - Constant Resistance:
+  Load simulates specified resistance (R = V / I)
+  Use for: Resistive load simulation
+
+═══════════════════════════════════════════════════════════
+
+🔧 BASIC OPERATIONS
+
+1. Set Parameters:
+   • Select mode (CC, CV, CP, or CR)
+   • Enter value for selected mode
+   • Click "Set Parameters" to apply
+
+2. Load ON:
+   • Applies the load to connected device
+   • Real-time measurements appear in the tab
+   • Use "Monitoring & Logging" to record data
+
+3. Load OFF:
+   • Disconnects load from device
+   • Safe to adjust parameters when OFF
+
+═══════════════════════════════════════════════════════════
+
+📊 CC PROFILE TEST
+
+Executes a time-based current profile automatically.
+
+CSV Format:
+  time_s,current_a
+  0,5.0          # 5A starting at 0s
+  10,10.0        # 10A starting at 10s
+  30,2.5         # 2.5A starting at 30s
+
+Parameters:
+  • Profile CSV: File with time_s and current_a columns
+  • Sample Period: Measurement interval (default: 1s)
+
+Steps:
+  1. Click "Browse" and select CSV file
+  2. Click "Load Profile" to validate
+  3. Review summary (segments, duration, current range)
+  4. Click "Start" to begin
+  5. Click "Stop" to abort if needed
+
+Output File:
+  • logs/prodigit_cc_profile_YYYYMMDD_HHMMSS.csv
+
+Features:
+  ✓ Automatic CSV logging
+  ✓ Real-time measurements
+  ✓ Continuous sampling during profile
+  ✓ Device shows [BUSY] in monitoring during test
+
+═══════════════════════════════════════════════════════════
+
+📊 LOGGING BEHAVIOR
+
+CC Profile Test:
+  ✓ Creates automatic CSV log
+  ✗ Monitoring tab shows [BUSY] (can't measure during test)
+  ✓ Check logs/ folder after test completes
+
+Manual Operations (Set Parameters, Load ON/OFF):
+  ✗ No automatic logging
+  ✓ Real-time display in tab (voltage, current, power)
+  ✓ Use "Monitoring & Logging" tab to record:
+    - Click "Start Monitoring"
+    - Click "Save Data" when done
+
+═══════════════════════════════════════════════════════════
+
+⚠️ SAFETY NOTES
+
+• Do not exceed device ratings:
+  - Max Current: 120A
+  - Max Voltage: 150V
+  - Max Power: 1200W
+
+• Always start with low values and increase gradually
+• Monitor temperature during high-power tests
+• Use appropriate current ratings for cables and connections
+
+═══════════════════════════════════════════════════════════
+
+💡 TIPS
+
+• Load ON shows real-time measurements in the tab
+• Profile test logs automatically - no manual monitoring needed
+• For manual tests, start Monitoring & Logging before Load ON
+• Check logs/ folder for profile test results
+        """
+        
+        text_widget = scrolledtext.ScrolledText(help_window, wrap=tk.WORD, font=('Courier', 9))
+        text_widget.pack(fill='both', expand=True, padx=10, pady=10)
+        text_widget.insert('1.0', help_text)
+        text_widget.config(state='disabled')
+        
+        ttk.Button(help_window, text="Close", command=help_window.destroy).pack(pady=10)
 
     def _load_profile_summary(self):
         """Load profile metadata for display."""
@@ -351,6 +645,9 @@ class ProdigitTab(DeviceTab):
             self._show_error("Prodigit", "Select a CSV profile first.")
             return
 
+        # Get output format
+        output_format = self.output_format_var.get()
+        
         self.profile_running = True
         self._update_profile_control_state(enabled=False)
         self.stop_profile_btn.config(state='normal')
@@ -360,7 +657,7 @@ class ProdigitTab(DeviceTab):
 
         def worker():
             try:
-                log_path = self.controller.run_cc_profile(profile_path, sample_period=sample_period)
+                log_path = self.controller.run_cc_profile(profile_path, sample_period=sample_period, output_format=output_format)
                 self._handle_profile_result(success=True, log_path=log_path)
             except Exception as exc:
                 self._handle_profile_result(success=False, error=str(exc))
