@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Keithley 2281S Battery Simulator/Emulator Controller
-Enhanced with reference script patterns from auto_mode_profile.py
+Refactored with modular test runners (delegation pattern)
 """
 import csv
 import time
@@ -14,11 +14,23 @@ from controllers.base_controller import BaseDeviceController
 from models.device_config import DEVICE_SPECS, DeviceType
 from utils.keithley_logger import KeithleyLogger
 
+# Import test runners (modular)
+from controllers.keithley.tests.pulse_test import KeithleyPulseTest
+from controllers.keithley.tests.battery_model import KeithleyBatteryModel
+from controllers.keithley.tests.profile_runner import KeithleyProfileRunner
+
 logger = logging.getLogger(__name__)
 
 
 class KeithleyController(BaseDeviceController):
-    """Keithley 2281S Battery Simulator/Emulator Controller"""
+    """
+    Keithley 2281S Battery Simulator/Emulator Controller
+    
+    Refactored Architecture:
+    - Core controller handles device communication and basic operations
+    - Test runners handle complex test logic (composition over inheritance)
+    - Backward compatible - existing code continues to work
+    """
     
     def __init__(self, interface):
         super().__init__(interface, DEVICE_SPECS[DeviceType.KEITHLEY_2281S])
@@ -27,6 +39,11 @@ class KeithleyController(BaseDeviceController):
         self.mode_switch_delay = 3.0  # Delay after mode switch (seconds)
         self._last_voltage: Optional[float] = None  # Track last set voltage for power calculation
         self._last_current: Optional[float] = None  # Track last set current for power calculation
+        
+        # Test runners (composition - modular design)
+        self._pulse_test = KeithleyPulseTest(self)
+        self._battery_model = KeithleyBatteryModel(self)
+        self._profile_runner = KeithleyProfileRunner(self)
         
     def set_voltage(self, voltage: float):
         """Set output voltage in volts - mode dependent"""
@@ -530,7 +547,7 @@ class KeithleyController(BaseDeviceController):
                       rest_time: float = 60.0,
                       i_pulse: float = 1.0,
                       i_rest: float = 0.0001,
-                      sample_interval: float = 0.5) -> tuple:
+                      sample_interval: float = 0.5) -> Tuple[str, str]:
         """
         Run battery pulse test to measure EVOC and ESR characteristics.
 
@@ -1329,137 +1346,12 @@ class KeithleyController(BaseDeviceController):
             During execution, the device is marked as BUSY and monitoring is disabled.
             Log file is saved to ./logs/keithley_log_YYYYMMDD_HHMMSS.csv
         """
-        print(f"\n🚀 Starting current profile execution...")
-        print(f"Profile: {profile_path}")
-        print(f"Parameters: discharge={discharge_current}A, charge={charge_voltage}V, sample_period={sample_period}s")
-
-        if self.busy:
-            error_msg = "Device is busy with another operation"
-            print(f"Error: {error_msg}")
-            raise Exception(error_msg)
-
-        # Check if connected
-        if not self.connected:
-            error_msg = "Device not connected"
-            print(f"Error: {error_msg}")
-            raise Exception(error_msg)
-
-        # Check for Ethernet connection and prevent test run
-        if self.is_ethernet_connection():
-            raise Exception(
-                "Current profile execution is not supported over Ethernet due to discharge measurement limitations. "
-                "Please use a USB connection for this test."
-            )
-            
-        # Test basic communication before starting
-        print("Testing device communication...")
-        try:
-            idn = self.query_command('*IDN?')
-            if idn:
-                print(f"Device responds: {idn.strip()[:50]}...")
-            else:
-                raise Exception("Device not responding to *IDN?")
-        except Exception as e:
-            error_msg = f"Communication test failed: {e}"
-            print(f"Error: {error_msg}")
-            raise Exception(error_msg)
-            
-        # Load profile
-        print("Loading current profile...")
-        profile_df = self.load_current_profile(profile_path)
-        if profile_df is None:
-            error_msg = "Failed to load current profile"
-            print(f"Error: {error_msg}")
-            raise Exception(error_msg)
-
-        # Set device as busy to prevent monitoring interference
-        self.set_busy(True)
-        print("Device marked as BUSY - monitoring disabled during profile execution")
-        
-        # Initialize logger
-        self.logger.clear_log()
-        self.logger.start_timer()
-
-        print(f"\n🚀 Starting profile execution with AUTOMATIC mode switching...")
-        print(f"Total segments: {len(profile_df)}")
-        print(f"Mode switch delay: {self.mode_switch_delay}s")
-        print(f"Sample period: {sample_period}s (measurements taken every {sample_period}s)")
-
-        try:
-            last_mode = None
-            segment_chunk = []
-            step_offset = 0
-
-            # Add a dummy row at the end to ensure the last chunk is processed
-            sentinel = pd.DataFrame([{'current_a': 999, 'duration_s': 0}], index=[len(profile_df)])
-            processing_df = pd.concat([profile_df, sentinel])
-
-            for index, row in processing_df.iterrows():
-                current = row['current_a']
-                current_mode = 'charge' if current >= 0 else 'discharge'
-
-                # Process chunk when mode changes
-                if current_mode != last_mode and last_mode is not None:
-                    print(f"\n>>> Mode change detected: {last_mode.upper()} → {current_mode.upper()}")
-                    print(f"    Processing {len(segment_chunk)} segments in {last_mode.upper()} mode.")
-                    
-                    if last_mode == 'charge':
-                        success = self.run_charge_segments(segment_chunk, step_offset, 
-                                                         charge_voltage, protection_voltage, sample_period)
-                    else:
-                        success = self.run_discharge_segments(segment_chunk, step_offset, 
-                                                            discharge_current, sample_period)
-                    
-                    if not success:
-                        print(f"Failed to execute {last_mode} segments")
-                        return None
-                    
-                    step_offset += len(segment_chunk)
-                    segment_chunk = []
-
-                # Add current segment to chunk (skip sentinel)
-                if index < len(profile_df):
-                    segment_chunk.append(row)
-                
-                last_mode = current_mode
-
-            # Save log with selected format
-            log_files = self.logger.save_log(format=output_format)
-            log_file = log_files[0] if log_files else None
-            if len(log_files) > 1:
-                print(f"\n✅✅✅ Profile execution completed. Logs saved:")
-                for f in log_files:
-                    print(f"  - {f}")
-            else:
-                print(f"\n✅✅✅ Profile execution completed. Log saved to: {log_file} ✅✅✅")
-            return log_file
-            
-        except KeyboardInterrupt:
-            print("\n\n⚠️  Script interrupted by user (Ctrl+C)")
-            return None
-        except Exception as e:
-            print(f"\n\n❌ Unexpected error: {e}")
-            print("Attempting device recovery...")
-            try:
-                # Try to recover the device
-                self.send_command('*RST')
-                time.sleep(1)
-                self.send_command(':OUTP OFF')
-                self.send_command(':BATT:OUTP OFF')
-                print("Device recovery attempted")
-            except:
-                print("Device recovery failed")
-            return None
-        finally:
-            # Always clear busy state and clean up
-            print("Cleaning up after profile execution...")
-            self.current_mode = None
-            self.set_busy(False)
-            print("Device no longer BUSY - monitoring re-enabled")
-            try:
-                self.send_command(':OUTP OFF')
-                self.send_command(':BATT:OUTP OFF')
-                print("Device cleanup completed - outputs turned off")
-            except Exception as cleanup_error:
-                print(f"Cleanup error (non-critical): {cleanup_error}")
-                pass
+        # Delegate to modular test runner
+        return self._profile_runner.run(
+            profile_path=profile_path,
+            discharge_current=discharge_current,
+            charge_voltage=charge_voltage,
+            protection_voltage=protection_voltage,
+            sample_period=sample_period,
+            output_format=output_format
+        )
