@@ -107,9 +107,6 @@ class SorensenTab(DeviceTab):
                     f"Please adjust OVP to at least {voltage * 1.01:.2f}V for safety."
                 )
             
-            # Get current value BEFORE OCP check to avoid NameError
-            current = float(self.current_entry.get())
-            
             # Safety check: OCP must be greater than or equal to set current
             ocp = float(self.ocp_entry.get())
             if ocp < current:
@@ -122,6 +119,7 @@ class SorensenTab(DeviceTab):
             if voltage < 0 or voltage > self.device_spec.max_voltage:
                 raise ValueError(f"Voltage ({voltage}V) out of range: 0-{self.device_spec.max_voltage}V")
             
+            current = float(self.current_entry.get())
             if current < 0 or current > self.device_spec.max_current:
                 raise ValueError(f"Current ({current}A) out of range: 0-{self.device_spec.max_current}A")
             
