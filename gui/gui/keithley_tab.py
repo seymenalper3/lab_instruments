@@ -10,7 +10,6 @@ from models.device_config import DEVICE_SPECS, DeviceType
 from controllers.keithley_controller import KeithleyController
 import threading
 from pathlib import Path
-import pandas as pd
 
 
 class KeithleyTab(DeviceTab):
@@ -18,6 +17,8 @@ class KeithleyTab(DeviceTab):
     
     def __init__(self, parent):
         super().__init__(parent, DEVICE_SPECS[DeviceType.KEITHLEY_2281S], KeithleyController)
+        # Thread references for cleanup
+        self.test_threads = []  # List of active test threads
         
     def create_controls(self):
         """Create Keithley-specific controls"""
@@ -170,10 +171,15 @@ class KeithleyTab(DeviceTab):
         self.charge_current_entry.grid(row=1, column=3, padx=5, pady=2)
         self.charge_current_entry.insert(0, "1.0")
         
+        ttk.Label(model_frame, text="Charge End Current (A):").grid(row=2, column=0, sticky='w', padx=5, pady=2)
+        self.charge_end_current_entry = ttk.Entry(model_frame, width=8)
+        self.charge_end_current_entry.grid(row=2, column=1, padx=5, pady=2)
+        self.charge_end_current_entry.insert(0, "0.05")  # Default: C/20 for 1Ah battery
+        
         # Model parameters
-        ttk.Label(model_frame, text="ESR Interval (s):").grid(row=2, column=0, sticky='w', padx=5, pady=2)
+        ttk.Label(model_frame, text="ESR Interval (s):").grid(row=3, column=0, sticky='w', padx=5, pady=2)
         self.esr_interval_entry = ttk.Entry(model_frame, width=8)
-        self.esr_interval_entry.grid(row=2, column=1, padx=5, pady=2)
+        self.esr_interval_entry.grid(row=3, column=1, padx=5, pady=2)
         self.esr_interval_entry.insert(0, "30")
         
         ttk.Label(model_frame, text="Model Slot (1-9):").grid(row=2, column=2, sticky='w', padx=5, pady=2)
@@ -539,6 +545,7 @@ Manual Operations (Set Parameters, Output ON/OFF):
                 args=(pulses, pulse_time, rest_time, pulse_current)
             )
             test_thread.daemon = True
+            self.test_threads.append(test_thread)
             test_thread.start()
                 
         except Exception as e:
@@ -563,6 +570,7 @@ Manual Operations (Set Parameters, Output ON/OFF):
             discharge_current = float(self.discharge_current_entry.get())
             charge_voltage = float(self.charge_voltage_entry.get())
             charge_current = float(self.charge_current_entry.get())
+            charge_end_current = float(self.charge_end_current_entry.get())
             esr_interval = int(self.esr_interval_entry.get())
             model_slot = int(self.model_slot_entry.get())
             v_min = float(self.model_vmin_entry.get())
@@ -601,9 +609,10 @@ Manual Operations (Set Parameters, Output ON/OFF):
             test_thread = threading.Thread(
                 target=self._run_battery_model_thread,
                 args=(discharge_voltage, discharge_current, charge_voltage, charge_current,
-                      esr_interval, model_slot, v_min, v_max, export_csv)
+                      charge_end_current, esr_interval, model_slot, v_min, v_max, export_csv)
             )
             test_thread.daemon = True
+            self.test_threads.append(test_thread)
             test_thread.start()
                 
         except Exception as e:
@@ -673,8 +682,8 @@ Manual Operations (Set Parameters, Output ON/OFF):
         messagebox.showerror("Error", f"Pulse test failed: {error_msg}")
         
     def _run_battery_model_thread(self, discharge_voltage, discharge_current, 
-                                 charge_voltage, charge_current, esr_interval, 
-                                 model_slot, v_min, v_max, export_csv):
+                                 charge_voltage, charge_current, charge_end_current,
+                                 esr_interval, model_slot, v_min, v_max, export_csv):
         """Run battery model test in background thread with automatic Battery Test mode switching"""
         try:
             # Automatically switch to Battery Test mode before running battery model test
@@ -695,6 +704,7 @@ Manual Operations (Set Parameters, Output ON/OFF):
                 discharge_current_end=discharge_current,
                 charge_vfull=charge_voltage,
                 charge_ilimit=charge_current,
+                charge_current_end=charge_end_current,
                 esr_interval=esr_interval,
                 model_slot=model_slot,
                 v_min=v_min,
@@ -766,6 +776,7 @@ Manual Operations (Set Parameters, Output ON/OFF):
             
             # Estimate duration by loading profile
             try:
+                import pandas as pd
                 df = pd.read_csv(profile_path)
                 if 'time_s' in df.columns and len(df) > 0:
                     total_time = df['time_s'].max()
@@ -802,6 +813,7 @@ Manual Operations (Set Parameters, Output ON/OFF):
                 args=(profile_path, discharge_current, charge_voltage, sample_period, output_format)
             )
             profile_thread.daemon = True
+            self.test_threads.append(profile_thread)
             profile_thread.start()
                 
         except Exception as e:

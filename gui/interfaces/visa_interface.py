@@ -99,6 +99,14 @@ class VISAInterface(DeviceInterface):
         print(f"VISA SEND: {command}")
         self.connection.write(command)
         
+    def read(self):
+        """Read response from VISA device"""
+        if not self.connected:
+            raise Exception("Not connected")
+        response = self.connection.read().strip()
+        print(f"VISA RECV: {response}")
+        return response
+        
     def query(self, command):
         """Send command and read response via VISA"""
         if not self.connected:

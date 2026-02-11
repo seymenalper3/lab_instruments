@@ -176,46 +176,56 @@ class ConnectionWidget:
             if not resources:
                 messagebox.showinfo("Info", "No VISA resources found")
                 return
-                
+            
             # Create selection dialog
             dialog = tk.Toplevel(self.parent)
             dialog.title("Select VISA Resource")
             dialog.geometry("500x300")
             dialog.transient(self.parent)
             dialog.grab_set()
-            
-            ttk.Label(dialog, text="Available Resources:").pack(pady=5)
-            
-            listbox = tk.Listbox(dialog, height=8)
-            listbox.pack(fill='both', expand=False, padx=10, pady=5)
-            
+
+            # Grid-based layout: listbox center, buttons bottom
+            dialog.rowconfigure(1, weight=1)
+            dialog.columnconfigure(0, weight=1)
+
+            ttk.Label(dialog, text="Available Resources:").grid(
+                row=0, column=0, sticky="w", padx=10, pady=(8, 2)
+            )
+
+            # Listbox with scrollbar
+            list_frame = ttk.Frame(dialog)
+            list_frame.grid(row=1, column=0, sticky="nsew", padx=10, pady=5)
+
+            scrollbar = ttk.Scrollbar(list_frame, orient="vertical")
+            listbox = tk.Listbox(list_frame, height=8, yscrollcommand=scrollbar.set)
+            scrollbar.config(command=listbox.yview)
+
+            listbox.pack(side="left", fill="both", expand=True)
+            scrollbar.pack(side="right", fill="y")
+
             for resource in resources:
                 listbox.insert(tk.END, resource)
-            
-            # Button frame - pack at bottom first
-            button_frame = ttk.Frame(dialog)
-            button_frame.pack(side='bottom', fill='x', padx=10, pady=10)
-            
-            # Selected resource display - pack at bottom before buttons
+
+            # Selected resource display
             selected_frame = ttk.Frame(dialog)
-            selected_frame.pack(side='bottom', fill='x', padx=10, pady=5)
-            
-            ttk.Label(selected_frame, text="Selected:").pack(side='left')
+            selected_frame.grid(row=2, column=0, sticky="ew", padx=10, pady=5)
+
+            ttk.Label(selected_frame, text="Selected:").pack(side="left")
             selected_var = tk.StringVar(value="None")
-            selected_label = ttk.Label(selected_frame, textvariable=selected_var, foreground="blue")
-            selected_label.pack(side='left', padx=(5,0))
-            
-            def on_listbox_select(event):
+            ttk.Label(selected_frame, textvariable=selected_var,
+                      foreground="blue").pack(side="left", padx=(5, 0))
+
+            def on_listbox_select(event=None):
                 selection = listbox.curselection()
                 if selection:
                     selected = listbox.get(selection[0])
                     selected_var.set(selected)
                 else:
                     selected_var.set("None")
-            
-            listbox.bind('<<ListboxSelect>>', on_listbox_select)
-            
-            def confirm_selection():
+
+            listbox.bind("<<ListboxSelect>>", on_listbox_select)
+
+            def confirm_selection(event=None):
                 selection = listbox.curselection()
                 if selection:
                     selected = listbox.get(selection[0])
@@ -227,16 +237,22 @@ class ConnectionWidget:
                     self.resource_entry.focus_set()
                 else:
                     messagebox.showwarning("Warning", "Please select a resource first")
-            
+
             def cancel_selection():
                 dialog.destroy()
-                    
-            confirm_btn = ttk.Button(button_frame, text="Confirm", command=confirm_selection)
-            confirm_btn.pack(side='left', padx=10, pady=5)
-            
-            cancel_btn = ttk.Button(button_frame, text="Cancel", command=cancel_selection)
-            cancel_btn.pack(side='left', padx=10, pady=5)
-            
+
+            # Double-click on a resource also confirms selection
+            listbox.bind("<Double-Button-1>", confirm_selection)
+
+            # Buttons at the bottom
+            button_frame = ttk.Frame(dialog)
+            button_frame.grid(row=3, column=0, sticky="e", padx=10, pady=(0, 10))
+
+            ttk.Button(button_frame, text="Confirm",
+                       command=confirm_selection).pack(side="left", padx=5)
+            ttk.Button(button_frame, text="Cancel",
+                       command=cancel_selection).pack(side="left", padx=5)
+
         except Exception as e:
             messagebox.showerror("Error", f"Failed to detect resources: {e}")
     
@@ -340,9 +356,30 @@ Important Notes:
             
         elif interface_type == InterfaceType.ETHERNET.value:
             host = self.ip_entry.get().strip()
-            port = int(self.port_entry.get())
             if not host:
                 raise ValueError("Please enter IP address")
+
+            # Validate IPv4 format
+            import re
+            ipv4_pattern = r'^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$'
+            match = re.match(ipv4_pattern, host)
+            if not match:
+                raise ValueError(f"Invalid IP address format: {host}")
+
+            # Validate each octet is 0-255
+            octets = [int(match.group(i)) for i in range(1, 5)]
+            if any(octet > 255 for octet in octets):
+                raise ValueError(f"Invalid IP address (octets must be 0-255): {host}")
+
+            # Validate port
+            try:
+                port = int(self.port_entry.get())
+            except ValueError:
+                raise ValueError("Port must be a number")
+
+            if not (1 <= port <= 65535):
+                raise ValueError(f"Port must be between 1 and 65535, got: {port}")
+
             return ConnectionConfig.create_ethernet(host, port)
             
         elif interface_type in [InterfaceType.USB.value, InterfaceType.GPIB.value]:

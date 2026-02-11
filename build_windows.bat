@@ -38,7 +38,7 @@ if %errorlevel% neq 0 (
 REM Check dependencies
 echo.
 echo [3/6] Checking dependencies...
-python -c "import pyvisa; import serial; import pandas; import tkinter" >nul 2>&1
+python -c "import pyvisa; import serial; import pandas; import openpyxl; import tkinter" >nul 2>&1
 if %errorlevel% neq 0 (
     echo Some dependencies are missing. Installing from requirements.txt...
     python -m pip install -r gui\requirements.txt
@@ -98,14 +98,7 @@ if exist dist\LabInstruments.exe (
     echo 3. Review WINDOWS_TESTING_CHECKLIST.md for testing
     echo 4. Create distribution package with README
     echo.
-
-    REM Ask if user wants to run the executable
-    choice /C YN /M "Do you want to run the executable now for testing"
-    if %errorlevel% equ 1 (
-        echo.
-        echo Launching executable...
-        start dist\LabInstruments.exe
-    )
+    echo Build completed successfully. You can now test the executable.
 ) else (
     echo ========================================
     echo ERROR: Executable not found

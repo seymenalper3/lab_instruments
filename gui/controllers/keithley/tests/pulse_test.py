@@ -68,15 +68,15 @@ class KeithleyPulseTest:
         # Pre-flight checks
         if not self.controller.connected:
             raise Exception("Device not connected")
-        
+
+        if self.controller.is_busy():
+            raise Exception("Device is busy with another operation")
+
         if self.controller.is_ethernet_connection():
             raise Exception(
                 "Pulse test data logging is not supported over Ethernet due to instrument limitations. "
                 "Please use a USB connection for this test."
             )
-            
-        if self.controller.busy:
-            raise Exception("Device is busy with another operation")
         
         # Set device as busy
         self.controller.set_busy(True)
@@ -110,7 +110,7 @@ class KeithleyPulseTest:
             self.controller.set_busy(False)
             try:
                 self.controller.send_command(':BATT:OUTP OFF')
-            except:
+            except Exception:
                 pass
     
     def _validate_parameters(self, pulses, pulse_time, rest_time, i_pulse):
@@ -261,7 +261,7 @@ class KeithleyPulseTest:
             # Clean up on error
             try:
                 self.controller.send_command(':BATT:OUTP OFF')
-            except:
+            except Exception:
                 pass
             raise Exception(f"Pulse test execution failed: {e}")
 

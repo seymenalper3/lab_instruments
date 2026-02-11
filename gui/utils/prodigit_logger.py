@@ -121,7 +121,7 @@ class ProdigitProfileLogger:
             'profile_path',
             'sample_period_s'
         ]
-        
+
         saved_files = []
         
         # Save CSV

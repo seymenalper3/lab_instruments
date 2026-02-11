@@ -32,6 +32,7 @@ class KeithleyBatteryModel:
             discharge_current_end: float = 0.4,
             charge_vfull: float = 4.20,
             charge_ilimit: float = 1.00,
+            charge_current_end: float = 0.05,  # End current for charge (default: C/20 = 0.05A for 1Ah battery)
             esr_interval: int = 30,
             model_slot: int = 4,
             v_min: float = 2.5,
@@ -41,7 +42,7 @@ class KeithleyBatteryModel:
         Run complete battery model generation test
 
         This function follows the procedure from Keithley 2281S manual.
-        It will wait indefinitely until discharge and charge phases complete.
+        It will wait until discharge and charge phases complete.
         Total duration can be several hours depending on battery capacity.
 
         Args:
@@ -49,6 +50,7 @@ class KeithleyBatteryModel:
             discharge_current_end: End current for discharge (A)
             charge_vfull: Full charge voltage (V)
             charge_ilimit: Charge current limit (A)
+            charge_current_end: End current for charge (A) - charge stops when current drops below this value
             esr_interval: ESR measurement interval (s)
             model_slot: Internal memory slot (1-9)
             v_min: Model voltage range minimum
@@ -59,19 +61,19 @@ class KeithleyBatteryModel:
             Dictionary with test results and file paths
 
         Note:
-            No timeout limits - test will run until battery reaches end conditions.
+            Charge phase will stop when current drops below charge_current_end (typically 0.05A = C/20).
             Progress is displayed every 30 seconds.
         """
         # Pre-flight checks
         if not self.controller.connected:
             raise Exception("Device not connected")
         
-        if self.controller.busy:
+        if self.controller.is_busy():
             raise Exception("Device is busy with another operation")
         
         # Validate parameters
         self._validate_parameters(discharge_voltage, discharge_current_end,
-                                 charge_vfull, charge_ilimit, model_slot, esr_interval)
+                                 charge_vfull, charge_ilimit, charge_current_end, model_slot, esr_interval)
         
         # Set device as busy
         self.controller.set_busy(True)
@@ -96,7 +98,7 @@ class KeithleyBatteryModel:
             self._discharge_phase(discharge_voltage, discharge_current_end)
             
             # 3) Charge and characterization
-            self._charge_and_characterize(charge_vfull, charge_ilimit, esr_interval)
+            self._charge_and_characterize(charge_vfull, charge_ilimit, charge_current_end, esr_interval)
             
             # 4) Generate and save model
             self._generate_and_save_model(model_slot, v_min, v_max)
@@ -124,15 +126,15 @@ class KeithleyBatteryModel:
             raise
             
         finally:
-            # Cleanup
+            # Cleanup - use controller's output_off method which handles mode properly
             try:
-                self.controller.send_command(':BATT:OUTP OFF')
-            except:
+                self.controller.output_off()
+            except Exception:
                 pass
             self.controller.set_busy(False)
     
     def _validate_parameters(self, discharge_voltage, discharge_current_end,
-                            charge_vfull, charge_ilimit, model_slot, esr_interval):
+                            charge_vfull, charge_ilimit, charge_current_end, model_slot, esr_interval):
         """Validate test parameters"""
         if discharge_voltage < 2.0 or discharge_voltage > 4.5:
             raise ValueError("Discharge voltage must be between 2.0 and 4.5V")
@@ -141,7 +143,9 @@ class KeithleyBatteryModel:
         if charge_vfull < 3.0 or charge_vfull > 4.5:
             raise ValueError("Charge voltage must be between 3.0 and 4.5V")
         if charge_ilimit < 0.1 or charge_ilimit > self.controller.device_spec.max_current:
-            raise ValueError(f"Charge current must be between 0.1 and {self.controller.device_spec.max_current}A")
+            raise ValueError(f"Charge current limit must be between 0.1 and {self.controller.device_spec.max_current}A")
+        if charge_current_end < 0.01 or charge_current_end > charge_ilimit:
+            raise ValueError(f"Charge end current must be between 0.01A and {charge_ilimit}A (current limit)")
         if model_slot < 1 or model_slot > 9:
             raise ValueError("Model slot must be between 1 and 9")
         if esr_interval < 1 or esr_interval > 300:
@@ -173,14 +177,15 @@ class KeithleyBatteryModel:
                 cond = int(self.controller.query_command(':STAT:OPER:INST:ISUM:COND?'))
                 measuring = bool(cond & 0x10)
                 
-                # Progress update
+                # Progress update - use MEAS commands directly (work in Battery Test mode)
                 try:
-                    voltage = float(self.controller.query_command(':BATT:VOLT?'))
-                    current = float(self.controller.query_command(':BATT:CURR?'))
+                    # In Battery Test mode, :BATT:VOLT? doesn't work, use :MEAS:VOLT? directly
+                    voltage = float(self.controller.query_command(':MEAS:VOLT?'))
+                    current = float(self.controller.query_command(':MEAS:CURR?'))
                     elapsed = time.time() - start_time
                     print(f"Discharge progress: {elapsed/60:.1f} min | V: {voltage:.3f}V | I: {current:.3f}A")
-                except:
-                    pass
+                except Exception:
+                    pass  # Skip progress update if measurement fails
                 
                 if not measuring:
                     print(f"Discharge completed in {(time.time() - start_time)/60:.1f} minutes")
@@ -192,13 +197,14 @@ class KeithleyBatteryModel:
                 print(f"Status check error: {e}")
                 time.sleep(5)
         
-        self.controller.send_command(':BATT:OUTP OFF')
+        # Use controller's output_off method which handles mode properly
+        self.controller.output_off()
         print("=== DISCHARGE COMPLETED ===")
     
-    def _charge_and_characterize(self, charge_vfull, charge_ilimit, esr_interval):
+    def _charge_and_characterize(self, charge_vfull, charge_ilimit, charge_current_end, esr_interval):
         """Execute charge and characterization phase"""
         print("=== STARTING CHARGE & CHARACTERIZATION ===")
-        print(f"Charge to {charge_vfull}V, current limit {charge_ilimit}A, ESR interval {esr_interval}s")
+        print(f"Charge to {charge_vfull}V, current limit {charge_ilimit}A, end current {charge_current_end}A, ESR interval {esr_interval}s")
         
         self.controller.send_command(f':BATT:TEST:SENS:AH:VFUL {charge_vfull}')
         self.controller.send_command(f':BATT:TEST:SENS:AH:ILIM {charge_ilimit}')
@@ -210,26 +216,79 @@ class KeithleyBatteryModel:
         self.controller.send_command(':BATT:OUTP ON')
         self.controller.send_command(':BATT:TEST:SENS:AH:EXEC STAR')
         
-        # Wait for charge to complete (no timeout)
+        # Wait for charge to complete
+        # Charge stops when: 1) Device stops measuring (measuring bit = 0), OR
+        #                    2) Current drops below charge_current_end (manual check)
         start_time = time.time()
+        consecutive_low_current = 0  # Count consecutive measurements below end current
+        required_low_current_count = 3  # Need 3 consecutive low readings to confirm charge complete
+        last_successful_current = None  # Track last successful current reading
+        timeout_count = 0  # Track consecutive timeouts
+        max_timeouts_before_fallback = 3  # After 3 consecutive timeouts, rely on device auto-stop
         
         while True:
             try:
                 cond = int(self.controller.query_command(':STAT:OPER:INST:ISUM:COND?'))
                 measuring = bool(cond & 0x10)
                 
-                # Progress update
+                # Progress update - use MEAS commands directly (work in Battery Test mode)
+                current = None
+                voltage = None
+                measurement_successful = False
                 try:
-                    voltage = float(self.controller.query_command(':BATT:VOLT?'))
-                    current = float(self.controller.query_command(':BATT:CURR?'))
+                    # In Battery Test mode, :BATT:VOLT? doesn't work, use :MEAS:VOLT? directly
+                    # Use shorter timeout for progress updates to avoid long delays
+                    voltage = float(self.controller.query_command(':MEAS:VOLT?'))
+                    current = float(self.controller.query_command(':MEAS:CURR?'))
+                    measurement_successful = True
+                    timeout_count = 0  # Reset timeout counter on success
+                    last_successful_current = current  # Update last successful reading
                     elapsed = time.time() - start_time
-                    print(f"Charge progress: {elapsed/60:.1f} min | V: {voltage:.3f}V | I: {current:.3f}A")
-                except:
-                    pass
+                    print(f"Charge progress: {elapsed/60:.1f} min | V: {voltage:.3f}V | I: {current:.3f}A (end: {charge_current_end}A, low_count: {consecutive_low_current}/{required_low_current_count})")
+                except Exception as e:
+                    timeout_count += 1
+                    # If measurement fails but we have a recent successful reading, use it
+                    if last_successful_current is not None:
+                        current = last_successful_current
+                        print(f"Measurement timeout ({timeout_count}/{max_timeouts_before_fallback}), using last reading: {current:.3f}A")
+                    else:
+                        print(f"Measurement timeout ({timeout_count}/{max_timeouts_before_fallback}), no previous reading available")
                 
+                # Check if device stopped measuring (primary termination condition)
                 if not measuring:
-                    print(f"Charge completed in {(time.time() - start_time)/60:.1f} minutes")
+                    print(f"Charge completed (device stopped measuring) in {(time.time() - start_time)/60:.1f} minutes")
                     break
+                
+                # If too many timeouts, rely on device's own termination mechanism
+                # Device should stop automatically when charge is complete
+                if timeout_count >= max_timeouts_before_fallback:
+                    print(f"Warning: Multiple measurement timeouts ({timeout_count}). Relying on device auto-stop mechanism.")
+                    print("Charge will complete when device stops measuring automatically.")
+                    # Continue checking measuring bit, but don't try to read current anymore
+                    time.sleep(30)
+                    continue
+                
+                # Manual end current check: if current drops below end current for 3 consecutive readings
+                # This handles cases where device doesn't automatically stop
+                # Only count successful measurements to avoid timeout issues
+                if current is not None and measurement_successful:
+                    if current <= charge_current_end:
+                        consecutive_low_current += 1
+                        print(f"Low current detected: {current:.3f}A <= {charge_current_end}A (count: {consecutive_low_current}/{required_low_current_count})")
+                        if consecutive_low_current >= required_low_current_count:
+                            print(f"Charge completed (current dropped to {current:.3f}A <= {charge_current_end}A) in {(time.time() - start_time)/60:.1f} minutes")
+                            # Stop the measurement manually
+                            try:
+                                self.controller.send_command(':BATT:TEST:SENS:AH:EXEC STOP')
+                            except Exception:
+                                pass
+                            break
+                    else:
+                        # Only reset counter if current is significantly above threshold (to avoid noise)
+                        if current > charge_current_end * 1.1:  # 10% margin to avoid noise
+                            if consecutive_low_current > 0:
+                                print(f"Current rose to {current:.3f}A, resetting low current counter")
+                            consecutive_low_current = 0  # Reset counter if current rises again
                 
                 time.sleep(30)  # Check every 30 seconds
                 
@@ -245,13 +304,34 @@ class KeithleyBatteryModel:
         self.controller.send_command(f':BATT:TEST:SENS:AH:GMOD:RANG {v_min},{v_max}')
         self.controller.send_command(f':BATT:TEST:SENS:AH:GMOD:SAVE:INT {model_slot}')
         
-        # Wait for model generation
+        # Wait for model generation with longer timeout
         time.sleep(2)
-        self.controller.query_command('*OPC?')  # Wait for operation complete
         
-        # Verify save
-        slots = self.controller.query_command(':BATT:TEST:SENS:AH:GMOD:CAT?')
-        print(f"Model saved to slot {model_slot}. Available slots: {slots}")
+        # Wait for operation complete with extended timeout
+        try:
+            # Increase timeout for model generation
+            original_timeout = getattr(self.controller.interface.connection, 'timeout', 5000)
+            if hasattr(self.controller.interface.connection, 'timeout'):
+                self.controller.interface.connection.timeout = 30000  # 30 second timeout
+            self.controller.query_command('*OPC?')  # Wait for operation complete
+            if hasattr(self.controller.interface.connection, 'timeout'):
+                self.controller.interface.connection.timeout = original_timeout
+        except Exception as e:
+            print(f"Warning: OPC query failed: {e}")
+            time.sleep(5)  # Wait a bit more if OPC fails
+        
+        # Verify save with extended timeout
+        try:
+            original_timeout = getattr(self.controller.interface.connection, 'timeout', 5000)
+            if hasattr(self.controller.interface.connection, 'timeout'):
+                self.controller.interface.connection.timeout = 30000  # 30 second timeout
+            slots = self.controller.query_command(':BATT:TEST:SENS:AH:GMOD:CAT?')
+            if hasattr(self.controller.interface.connection, 'timeout'):
+                self.controller.interface.connection.timeout = original_timeout
+            print(f"Model saved to slot {model_slot}. Available slots: {slots}")
+        except Exception as e:
+            print(f"Warning: Could not verify model save: {e}")
+            print(f"Model may still be saved to slot {model_slot}")
     
     def _export_model_csv(self, model_slot, test_id):
         """Export battery model to CSV"""

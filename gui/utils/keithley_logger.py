@@ -177,10 +177,13 @@ class KeithleyLogger:
             filename: Optional base filename (without extension)
             
         Returns:
-            List of saved file paths
+            List of saved file paths. If no log data is available, returns an empty list
+            and prints a warning instead of raising an exception.
         """
+        # Gracefully handle empty log (e.g., if profile aborted before any measurements)
         if not self.log:
-            raise ValueError("No log data to save")
+            print("Warning: No log data to save. Skipping log file creation.")
+            return []
         
         files = []
         

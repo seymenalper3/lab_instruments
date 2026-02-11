@@ -64,15 +64,15 @@ class SorensenController(BaseDeviceController):
         self.send_command(cmd, check_errors=True)
         logger.info(f"OVP set successfully to {ovp_voltage}V")
     
-    def set_ocp(self, ocp_current: float):
-        """Set overcurrent protection"""
-        if ocp_current < 0 or ocp_current > self.device_spec.max_current:
-            raise ValueError(f"OCP current must be between 0 and {self.device_spec.max_current}A")
-        
-        logger.info(f"Setting OCP to {ocp_current}A")
-        cmd = 'SOUR:CURR:PROT {}'.format(ocp_current)
+    def set_current_limit(self, limit_current: float):
+        """Set current soft limit (SGX does not support hardware OCP)"""
+        if limit_current < 0 or limit_current > self.device_spec.max_current:
+            raise ValueError(f"Current limit must be between 0 and {self.device_spec.max_current}A")
+
+        logger.info(f"Setting current limit to {limit_current}A")
+        cmd = self.device_spec.default_commands['set_current_limit'].format(limit_current)
         self.send_command(cmd, check_errors=True)
-        logger.info(f"OCP set successfully to {ocp_current}A")
+        logger.info(f"Current limit set successfully to {limit_current}A")
         
     def output_on(self):
         """Turn output on"""
@@ -94,7 +94,8 @@ class SorensenController(BaseDeviceController):
             cmd = self.device_spec.default_commands['measure_voltage']
             response = self.query_command(cmd)
             return float(response)
-        except:
+        except Exception as e:
+            logger.debug(f"Error measuring voltage: {e}")
             return None
         
     def measure_current(self) -> Optional[float]:
@@ -103,16 +104,16 @@ class SorensenController(BaseDeviceController):
             cmd = self.device_spec.default_commands['measure_current']
             response = self.query_command(cmd)
             return float(response)
-        except:
+        except Exception as e:
+            logger.debug(f"Error measuring current: {e}")
             return None
             
     def measure_power(self) -> Optional[float]:
-        """Calculate power from voltage and current"""
+        """Read power measurement (SGX-unique MEAS:POW? averages 3 V*I pairs)"""
         try:
-            voltage = self.measure_voltage()
-            current = self.measure_current()
-            if voltage is not None and current is not None:
-                return voltage * current
-        except:
-            pass
-        return None
+            cmd = self.device_spec.default_commands['measure_power']
+            response = self.query_command(cmd)
+            return float(response)
+        except Exception as e:
+            logger.debug(f"Error measuring power: {e}")
+            return None

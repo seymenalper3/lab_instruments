@@ -340,26 +340,26 @@ class MonitoringTab:
                     if voltage_key in data_point and data_point[voltage_key] is not None:
                         voltage_text = f"Voltage: {data_point[voltage_key]:.3f} V"
                         if is_busy:
-                            voltage_text += " [PULSE]"
+                            voltage_text += " [BUSY]"
                         widgets['voltage'].config(text=voltage_text, foreground="orange" if is_busy else "black")
                     elif is_busy:
-                        widgets['voltage'].config(text="Voltage: PULSE", foreground="orange")
+                        widgets['voltage'].config(text="Voltage: BUSY", foreground="orange")
                         
                     if current_key in data_point and data_point[current_key] is not None:
                         current_text = f"Current: {data_point[current_key]:.3f} A"
                         if is_busy:
-                            current_text += " [PULSE]"
+                            current_text += " [BUSY]"
                         widgets['current'].config(text=current_text, foreground="orange" if is_busy else "black")
                     elif is_busy:
-                        widgets['current'].config(text="Current: PULSE", foreground="orange")
+                        widgets['current'].config(text="Current: BUSY", foreground="orange")
                         
                     if power_key in data_point and data_point[power_key] is not None:
                         power_text = f"Power: {data_point[power_key]:.3f} W"
                         if is_busy:
-                            power_text += " [PULSE]"
+                            power_text += " [BUSY]"
                         widgets['power'].config(text=power_text, foreground="orange" if is_busy else "black")
                     elif is_busy:
-                        widgets['power'].config(text="Power: PULSE", foreground="orange")
+                        widgets['power'].config(text="Power: BUSY", foreground="orange")
                     
                     # Update mode display for this device
                     if device_name in self.data_logger.devices:
@@ -664,7 +664,7 @@ Automatic Test Logs (logs/ folder):
             try:
                 ts = datetime.datetime.strptime(point['timestamp'], '%Y-%m-%d %H:%M:%S.%f')
                 timestamps.append(ts)
-            except:
+            except Exception:
                 # Skip invalid timestamps
                 continue
         

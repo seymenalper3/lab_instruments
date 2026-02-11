@@ -66,6 +66,28 @@ class ConnectionConfig:
 
 
 @dataclass
+class DeviceTiming:
+    """Device communication timing derived from manual specs"""
+    min_measurement_interval_s: float = 0.050  # Manual minimum between measurements
+    safety_factor: float = 1.2                 # 20% safety margin
+
+    @property
+    def send_delay_s(self) -> float:
+        """Delay after send_command (manual min * safety factor)"""
+        return self.min_measurement_interval_s * self.safety_factor
+
+    @property
+    def query_write_delay_s(self) -> float:
+        """Delay after write in query_command (manual min * 1.1)"""
+        return self.min_measurement_interval_s * 1.1
+
+    @property
+    def query_read_delay_s(self) -> float:
+        """Delay after read in query_command (buffer cleanup only)"""
+        return 0.010
+
+
+@dataclass
 class DeviceSpec:
     """Device specifications and capabilities"""
     name: str
@@ -75,7 +97,8 @@ class DeviceSpec:
     max_power: Optional[float] = None
     supported_interfaces: List[InterfaceType] = None
     default_commands: Dict[str, str] = None
-    
+    timing: Optional[DeviceTiming] = None
+
     def __post_init__(self):
         if self.supported_interfaces is None:
             self.supported_interfaces = []
@@ -97,14 +120,16 @@ DEVICE_SPECS = {
             'set_voltage': 'SOUR:VOLT {}',
             'set_current': 'SOUR:CURR {}',
             'set_ovp': 'SOUR:VOLT:PROT {}',
+            'set_current_limit': 'SOUR:CURR:LIM {}',
             'output_on': 'OUTP:STAT ON',
             'output_off': 'OUTP:STAT OFF',
             'measure_voltage': 'MEAS:VOLT?',
             'measure_current': 'MEAS:CURR?',
+            'measure_power': 'MEAS:POW?',
             'query_error': 'SYST:ERR?'
         }
     ),
-    
+
     DeviceType.KEITHLEY_2281S: DeviceSpec(
         name="Keithley 2281S",
         device_type=DeviceType.KEITHLEY_2281S,
@@ -150,6 +175,7 @@ DEVICE_SPECS = {
         max_current=160.0,
         max_power=5000.0,
         supported_interfaces=[InterfaceType.RS232, InterfaceType.USB],
+        timing=DeviceTiming(min_measurement_interval_s=0.050, safety_factor=1.2),
         default_commands={
             'identify': '*IDN?',
             'set_mode_cc': 'STAT:MODE CC',
@@ -157,7 +183,7 @@ DEVICE_SPECS = {
             'set_mode_cv': 'STAT:MODE CV',
             'set_voltage': 'VOLT:HIGH {}',
             'set_mode_cp': 'STAT:MODE CP',
-            'set_power': 'POW:HIGH {}',
+            'set_power': 'CP:HIGH {}',
             'set_mode_cr': 'STAT:MODE CR',
             'set_resistance': 'RES:HIGH {}',
             'load_on': 'STAT:LOAD ON',
@@ -167,7 +193,7 @@ DEVICE_SPECS = {
             'measure_power': 'MEAS:POW?',
             'query_mode': 'STAT:MODE?',
             'query_load': 'STAT:LOAD?',
-            'query_error': 'SYST:ERR?'
+            'query_error': 'ERR?'
         }
     )
 }

@@ -35,8 +35,8 @@ class SorensenTab(DeviceTab):
         self.ovp_entry.grid(row=1, column=1, padx=5, pady=2)
         self.ovp_entry.insert(0, "10")
         
-        # OCP setting
-        ttk.Label(self.control_frame, text=f"OCP (A, max: {self.device_spec.max_current:.1f}):").grid(row=1, column=2, sticky='w', padx=5, pady=2)
+        # Current Limit setting (SGX has soft limit, not hardware OCP)
+        ttk.Label(self.control_frame, text=f"I-Limit (A, max: {self.device_spec.max_current:.1f}):").grid(row=1, column=2, sticky='w', padx=5, pady=2)
         self.ocp_entry = ttk.Entry(self.control_frame, width=10)
         self.ocp_entry.grid(row=1, column=3, padx=5, pady=2)
         self.ocp_entry.insert(0, "12")
@@ -77,7 +77,7 @@ class SorensenTab(DeviceTab):
             self.controller.set_voltage(voltage)
             self.controller.set_current(current)
             self.controller.set_ovp(ovp)
-            self.controller.set_ocp(ocp)
+            self.controller.set_current_limit(ocp)
             
             return "Parameters set successfully"
             
@@ -110,12 +110,12 @@ class SorensenTab(DeviceTab):
             # Get current value BEFORE OCP check to avoid NameError
             current = float(self.current_entry.get())
             
-            # Safety check: OCP must be greater than or equal to set current
+            # Safety check: Current limit must be >= set current
             ocp = float(self.ocp_entry.get())
             if ocp < current:
                 raise ValueError(
-                    f"OCP ({ocp}A) must be greater than or equal to set current ({current}A). "
-                    f"Please adjust OCP to at least {current:.2f}A for safety."
+                    f"Current limit ({ocp}A) must be >= set current ({current}A). "
+                    f"Please adjust current limit to at least {current:.2f}A."
                 )
             
             # Validate parameters are within device limits

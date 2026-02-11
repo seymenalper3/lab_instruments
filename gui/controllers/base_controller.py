@@ -3,6 +3,7 @@
 Base device controller class
 """
 import time
+import threading
 import logging
 import socket
 from abc import ABC, abstractmethod
@@ -22,6 +23,7 @@ class BaseDeviceController(ABC):
         self.model = ""
         self.connected = False
         self.busy = False  # Flag to indicate device is busy with special operations
+        self._busy_lock = threading.Lock()  # Thread safety for busy flag
         
     def connect(self) -> bool:
         """Connect to the device"""
@@ -81,7 +83,7 @@ class BaseDeviceController(ABC):
         try:
             identify_cmd = self.device_spec.default_commands.get('identify', '*IDN?')
             self.model = self.interface.query(identify_cmd)
-        except:
+        except Exception:
             self.model = "Unknown"
             
     def is_connected(self) -> bool:
@@ -89,17 +91,24 @@ class BaseDeviceController(ABC):
         return self.connected and self.interface.is_connected()
         
     def set_busy(self, busy: bool):
-        """Set device busy state"""
-        self.busy = busy
+        """Set device busy state (thread-safe)"""
+        with self._busy_lock:
+            self.busy = busy
         
     def is_busy(self) -> bool:
-        """Check if device is busy with special operations"""
-        return self.busy
+        """Check if device is busy with special operations (thread-safe)"""
+        with self._busy_lock:
+            return self.busy
         
     def is_available_for_monitoring(self) -> bool:
         """Check if device is available for monitoring"""
         return self.is_connected() and not self.is_busy()
-        
+
+    def is_ethernet_connection(self) -> bool:
+        """Check if the connection is using Ethernet interface"""
+        from interfaces.ethernet_interface import EthernetInterface
+        return isinstance(self.interface, EthernetInterface)
+
     @abstractmethod
     def measure_voltage(self) -> Optional[float]:
         """Read voltage measurement"""
@@ -154,6 +163,31 @@ class BaseDeviceController(ABC):
         """Handle timeout exception by attempting to turn off outputs for safety"""
         logger.warning(f"Timeout occurred during {operation} - attempting safe shutdown")
         try:
+            # Check if measurement is in process - don't try to turn off output if it is
+            # This prevents "Not permitted while measurement is in process" errors
+            measurement_active = False
+            try:
+                if hasattr(self, 'current_mode') and self.current_mode == 'test':
+                    # In Battery Test mode, check if measurement is active
+                    # Use short timeout to avoid another timeout
+                    original_timeout = getattr(self.interface.connection, 'timeout', 5000)
+                    if hasattr(self.interface.connection, 'timeout'):
+                        self.interface.connection.timeout = 2000  # 2 second timeout for status check
+                    try:
+                        cond = int(self.query_command(':STAT:OPER:INST:ISUM:COND?'))
+                        measuring = bool(cond & 0x10)
+                        if measuring:
+                            measurement_active = True
+                            logger.warning("Measurement in process - skipping output shutdown to avoid error")
+                    finally:
+                        if hasattr(self.interface.connection, 'timeout'):
+                            self.interface.connection.timeout = original_timeout
+            except Exception:
+                pass  # If status check fails, proceed with shutdown attempt
+            
+            if measurement_active:
+                return  # Don't try to turn off output during active measurement
+            
             if hasattr(self, 'output_off'):
                 self.output_off()
                 logger.info("Output turned off after timeout")
@@ -161,7 +195,12 @@ class BaseDeviceController(ABC):
                 self.load_off()
                 logger.info("Load turned off after timeout")
         except Exception as e:
-            logger.error(f"Failed to turn off outputs after timeout: {e}")
+            # Don't log as error if it's "not permitted" error during measurement
+            error_str = str(e).lower()
+            if 'not permitted' in error_str or 'measurement' in error_str or '720' in str(e):
+                logger.warning(f"Could not turn off outputs (measurement may be active): {e}")
+            else:
+                logger.error(f"Failed to turn off outputs after timeout: {e}")
     
     def send_command(self, command: str, check_errors: bool = False):
         """Send command to device

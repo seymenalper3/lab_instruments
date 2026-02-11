@@ -200,12 +200,12 @@ class MainWindow:
             # Add callback to register devices when they connect
             original_on_connect = tab.on_connect
 
-            def create_connect_wrapper(device_name, original_func):
+            def create_connect_wrapper(device_name, original_func, device_tab=tab):
                 def wrapper(config):
                     result = original_func(config)
                     # Add device to monitoring after successful connection
-                    if tab.is_connected():
-                        self.monitoring_tab.add_device(device_name, tab.get_controller())
+                    if device_tab.is_connected():
+                        self.monitoring_tab.add_device(device_name, device_tab.get_controller())
                         logger.info(f"Device '{device_name}' connected and registered for monitoring")
                     return result
                 return wrapper
@@ -215,7 +215,7 @@ class MainWindow:
             # Add callback to unregister devices when they disconnect
             original_on_disconnect = tab.on_disconnect
 
-            def create_disconnect_wrapper(device_name, original_func):
+            def create_disconnect_wrapper(device_name, original_func, device_tab=tab):
                 def wrapper():
                     result = original_func()
                     # Remove device from monitoring after disconnect
@@ -270,7 +270,27 @@ class MainWindow:
             except Exception as e:
                 logger.error(f"Error stopping monitoring: {e}")
 
-        # Disconnect all devices
+        # Wait for all test threads to complete before disconnecting devices
+        logger.info("Waiting for all test threads to complete...")
+        for name, tab in self.device_tabs.items():
+            # Wait for test threads with timeout
+            if hasattr(tab, 'test_threads'):
+                for thread in getattr(tab, 'test_threads', []):
+                    if thread and thread.is_alive():
+                        logger.info(f"Waiting for {name} test thread to complete...")
+                        thread.join(timeout=3.0)
+                        if thread.is_alive():
+                            logger.warning(f"{name} test thread did not complete within timeout - forcing disconnect")
+            
+            if hasattr(tab, 'profile_thread') and getattr(tab, 'profile_thread', None):
+                thread = tab.profile_thread
+                if thread and thread.is_alive():
+                    logger.info(f"Waiting for {name} profile thread to complete...")
+                    thread.join(timeout=3.0)
+                    if thread.is_alive():
+                        logger.warning(f"{name} profile thread did not complete within timeout - forcing disconnect")
+        
+        # Disconnect all devices (this will also turn off outputs)
         for name, tab in self.device_tabs.items():
             if tab.is_connected():
                 try:

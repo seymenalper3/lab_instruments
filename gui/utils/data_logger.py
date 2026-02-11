@@ -6,13 +6,20 @@ import csv
 import queue
 import threading
 import time
+import logging
 from datetime import datetime
 from typing import Dict, List, Optional, Callable
 from models.device_config import MeasurementData
 
+logger = logging.getLogger(__name__)
+
 
 class DataLogger:
     """Data logging and monitoring system"""
+    
+    # Maximum number of data points to keep in memory (prevents memory leak)
+    # 12 hours at 1s interval = 43,200 points, so 100k is a safe limit
+    MAX_DATA_POINTS = 100000
     
     def __init__(self):
         self.monitoring = False
@@ -20,17 +27,20 @@ class DataLogger:
         self.data_queue = queue.Queue()
         self.measurement_data = []
         self.devices = {}
+        self.devices_lock = threading.Lock()  # Thread safety for device dict access
         self.sample_interval = 1.0
         self.callbacks = []
         
     def add_device(self, name: str, controller):
         """Add a device controller for monitoring"""
-        self.devices[name] = controller
+        with self.devices_lock:
+            self.devices[name] = controller
         
     def remove_device(self, name: str):
         """Remove a device from monitoring"""
-        if name in self.devices:
-            del self.devices[name]
+        with self.devices_lock:
+            if name in self.devices:
+                del self.devices[name]
             
     def set_sample_interval(self, interval: float):
         """Set monitoring sample interval in seconds"""
@@ -65,7 +75,8 @@ class DataLogger:
                 
                 # Collect measurements from all connected devices
                 # Create a copy of devices dict to avoid threading issues
-                devices_copy = dict(self.devices)
+                with self.devices_lock:
+                    devices_copy = dict(self.devices)
                 for device_name, controller in devices_copy.items():
                     if controller and controller.is_connected():
                         # Skip busy devices to avoid interference with special operations
@@ -83,6 +94,19 @@ class DataLogger:
                                 voltage = measurements.voltage if measurements.voltage is not None else None
                                 current = measurements.current if measurements.current is not None else None
                                 power = measurements.power if measurements.power is not None else None
+                                
+                                # Additional validation: P should be approximately V * I
+                                # This helps catch data corruption issues
+                                if voltage is not None and current is not None and power is not None:
+                                    expected_power = voltage * current
+                                    tolerance = abs(expected_power * 0.05)  # 5% tolerance
+                                    if abs(power - expected_power) > max(tolerance, 0.1):
+                                        # Power doesn't match, recalculate
+                                        power = expected_power
+                                        logger.warning(
+                                            f"Data validation: Corrected power for {device_name} "
+                                            f"(V={voltage:.2f}V, I={current:.3f}A, P_corrected={power:.2f}W)"
+                                        )
                                 
                                 data_point[f'{device_name}_voltage'] = voltage
                                 data_point[f'{device_name}_current'] = current
@@ -124,6 +148,16 @@ class DataLogger:
                 data_point = self.data_queue.get_nowait()
                 self.measurement_data.append(data_point)
                 new_data.append(data_point)
+                
+                # Prevent memory leak: remove old data if limit exceeded
+                if len(self.measurement_data) >= self.MAX_DATA_POINTS:
+                    # Remove oldest 50% of data (FIFO)
+                    remove_count = self.MAX_DATA_POINTS // 2
+                    self.measurement_data = self.measurement_data[remove_count:]
+                    logger.warning(
+                        f"Measurement data buffer limit ({self.MAX_DATA_POINTS}) reached, "
+                        f"removed {remove_count} oldest data points"
+                    )
                 
                 # Call callbacks with new data
                 for callback in self.callbacks:
@@ -179,11 +213,13 @@ class DataLogger:
             
             # Lazy import
             try:
+                import pandas as pd
                 import openpyxl
-            except ImportError:
-                print("Error: openpyxl not installed. Install: pip install openpyxl")
+            except ImportError as e:
+                print(f"Error: Required library not installed. Install: pip install pandas openpyxl")
+                print(f"Details: {e}")
                 return False
-            
+
             # Create DataFrame from data
             df = pd.DataFrame(self.measurement_data)
             

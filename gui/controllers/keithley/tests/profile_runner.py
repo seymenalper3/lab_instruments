@@ -4,8 +4,10 @@ Keithley Profile Runner - Extract from main controller
 Executes current profiles with automatic mode switching
 """
 import time
-import pandas as pd
+import logging
 from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 
 class KeithleyProfileRunner:
@@ -68,13 +70,13 @@ class KeithleyProfileRunner:
             During execution, the device is marked as BUSY and monitoring is disabled.
             Log file is saved to ./logs/keithley_log_YYYYMMDD_HHMMSS.{csv|xlsx}
         """
-        print(f"\n🚀 Starting current profile execution...")
+        print(f"\n--- Starting current profile execution...")
         print(f"Profile: {profile_path}")
         print(f"Parameters: discharge={discharge_current}A, charge={charge_voltage}V, sample_period={sample_period}s")
         print(f"Output format: {output_format.upper()}")
 
         # Pre-flight checks
-        if self.controller.busy:
+        if self.controller.is_busy():
             error_msg = "Device is busy with another operation"
             print(f"Error: {error_msg}")
             raise Exception(error_msg)
@@ -119,7 +121,7 @@ class KeithleyProfileRunner:
         self.controller.logger.clear_log()
         self.controller.logger.start_timer()
 
-        print(f"\n🚀 Starting profile execution with AUTOMATIC mode switching...")
+        print(f"\n--- Starting profile execution with AUTOMATIC mode switching...")
         print(f"Total segments: {len(profile_df)}")
         print(f"Mode switch delay: {self.controller.mode_switch_delay}s")
         print(f"Sample period: {sample_period}s (measurements taken every {sample_period}s)")
@@ -134,19 +136,19 @@ class KeithleyProfileRunner:
             log_file = log_files[0] if log_files else None
             
             if len(log_files) > 1:
-                print(f"\n✅✅✅ Profile execution completed. Logs saved:")
+                print(f"\n[OK] Profile execution completed. Logs saved:")
                 for f in log_files:
                     print(f"  - {f}")
             else:
-                print(f"\n✅✅✅ Profile execution completed. Log saved to: {log_file} ✅✅✅")
+                print(f"\n[OK] Profile execution completed. Log saved to: {log_file}")
             
             return log_file
             
         except KeyboardInterrupt:
-            print("\n\n⚠️  Script interrupted by user (Ctrl+C)")
+            print("\n\n[WARN] Script interrupted by user (Ctrl+C)")
             return None
         except Exception as e:
-            print(f"\n\n❌ Unexpected error: {e}")
+            print(f"\n\n[ERROR] Unexpected error: {e}")
             print("Attempting device recovery...")
             self._recovery()
             return None
@@ -163,9 +165,11 @@ class KeithleyProfileRunner:
             except Exception as cleanup_error:
                 print(f"Cleanup error (non-critical): {cleanup_error}")
     
-    def _execute_profile(self, profile_df, discharge_current, charge_voltage, 
+    def _execute_profile(self, profile_df, discharge_current, charge_voltage,
                         protection_voltage, sample_period):
         """Execute profile with mode switching"""
+        import pandas as pd
+
         last_mode = None
         segment_chunk = []
         step_offset = 0
@@ -206,6 +210,25 @@ class KeithleyProfileRunner:
                 segment_chunk.append(row)
             
             last_mode = current_mode
+        
+        # After processing all rows, there may be a remaining chunk (e.g. profile
+        # with only charge or only discharge segments). Process it here.
+        if segment_chunk and last_mode is not None:
+            print(f"\n>>> Final chunk detected: {len(segment_chunk)} segments in {last_mode.upper()} mode.")
+            if last_mode == 'charge':
+                success = self.controller.run_charge_segments(
+                    segment_chunk, step_offset,
+                    charge_voltage, protection_voltage, sample_period
+                )
+            else:
+                success = self.controller.run_discharge_segments(
+                    segment_chunk, step_offset,
+                    discharge_current, sample_period
+                )
+
+            if not success:
+                print(f"Failed to execute final {last_mode} segments")
+                raise Exception(f"Final segment execution failed in {last_mode} mode")
     
     def _recovery(self):
         """Attempt device recovery"""
@@ -215,6 +238,7 @@ class KeithleyProfileRunner:
             self.controller.send_command(':OUTP OFF')
             self.controller.send_command(':BATT:OUTP OFF')
             print("Device recovery attempted")
-        except:
-            print("Device recovery failed")
+        except Exception as e:
+            logger.error(f"Device recovery failed: {e}")
+            print(f"Device recovery failed: {e}")
 

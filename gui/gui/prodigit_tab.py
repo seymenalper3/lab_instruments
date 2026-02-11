@@ -35,6 +35,7 @@ class ProdigitTab(DeviceTab):
         self.profile_status_var = None
         super().__init__(parent, DEVICE_SPECS[DeviceType.PRODIGIT_34205A], ProdigitController)
         self.is_load_on = False
+        self._status_update_counter = 0  # Counter to reduce status query frequency
         
         # Update mode labels with device limits
         self.mode_labels = {
@@ -106,7 +107,7 @@ class ProdigitTab(DeviceTab):
         self.load_off_btn.pack(side='left', padx=5)
         
         ttk.Button(btn_frame, text="❓ Help", command=self.show_help).pack(side='left', padx=15)
-        
+
         # Status display section
         status_frame = ttk.Frame(self.control_frame)
         status_frame.grid(row=3, column=0, columnspan=4, pady=(10, 5), sticky='w')
@@ -312,8 +313,11 @@ class ProdigitTab(DeviceTab):
             self.current_label.config(text=f"Current: {i:.3f} A" if i is not None else "Current: -- A")
             self.power_label.config(text=f"Power: {p:.3f} W" if p is not None else "Power: -- W")
 
-            # Update status
-            self._update_status()
+            # Update status less frequently (every 5 seconds) to reduce delays
+            self._status_update_counter += 1
+            if self._status_update_counter >= 5:
+                self._update_status()
+                self._status_update_counter = 0
 
         except Exception as e:
             self.is_load_on = False
@@ -552,10 +556,10 @@ Manual Operations (Set Parameters, Load ON/OFF):
 
 ⚠️ SAFETY NOTES
 
-• Do not exceed device ratings:
-  - Max Current: 120A
-  - Max Voltage: 150V
-  - Max Power: 1200W
+• Do not exceed device ratings (34205A):
+  - Max Current: 160A
+  - Max Voltage: 600V
+  - Max Power: 5000W
 
 • Always start with low values and increase gradually
 • Monitor temperature during high-power tests
@@ -647,7 +651,7 @@ Manual Operations (Set Parameters, Load ON/OFF):
 
         # Get output format
         output_format = self.output_format_var.get()
-        
+
         self.profile_running = True
         self._update_profile_control_state(enabled=False)
         self.stop_profile_btn.config(state='normal')

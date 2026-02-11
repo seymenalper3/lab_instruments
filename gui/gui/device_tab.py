@@ -2,12 +2,15 @@
 """
 Generic device control tab
 """
+import logging
 import tkinter as tk
 from tkinter import ttk, messagebox
 from typing import Optional, Dict, Any
 from models.device_config import DeviceSpec, ConnectionConfig
 from controllers.base_controller import BaseDeviceController
 from gui.connection_widget import ConnectionWidget
+
+logger = logging.getLogger(__name__)
 
 
 class DeviceTab:
@@ -96,7 +99,7 @@ class DeviceTab:
                         self.controller.output_off()
                     if hasattr(self.controller, 'load_off'):
                         self.controller.load_off()
-                except:
+                except Exception:
                     pass  # Ignore errors during emergency shutdown
             
             self.controller = None
@@ -106,6 +109,21 @@ class DeviceTab:
 
     def on_disconnect(self):
         """Handle device disconnection"""
+        # Wait for any running test threads to complete (with timeout)
+        if hasattr(self, 'test_threads'):
+            for thread in self.test_threads[:]:  # Copy list to avoid modification during iteration
+                if thread.is_alive():
+                    logger.info(f"Waiting for test thread to complete...")
+                    thread.join(timeout=5.0)
+                    if thread.is_alive():
+                        logger.warning(f"Test thread did not complete within timeout")
+        
+        if hasattr(self, 'profile_thread') and self.profile_thread and self.profile_thread.is_alive():
+            logger.info("Waiting for profile thread to complete...")
+            self.profile_thread.join(timeout=5.0)
+            if self.profile_thread.is_alive():
+                logger.warning("Profile thread did not complete within timeout")
+        
         if self.controller:
             self.controller.disconnect()
             self.controller = None

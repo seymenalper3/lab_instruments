@@ -7,8 +7,6 @@ from typing import Optional, Dict, Any
 import threading
 import logging
 
-import pandas as pd
-
 import time
 
 from controllers.base_controller import BaseDeviceController
@@ -33,13 +31,68 @@ class ProdigitController(BaseDeviceController):
         self._profile_abort_event = threading.Event()
         self._cached_profile_summary: Optional[Dict[str, Any]] = None
         self._cached_profile_path: Optional[str] = None
-        self._cached_profile_df: Optional[pd.DataFrame] = None
+        self._cached_profile_df = None  # Optional[pd.DataFrame]
         self._last_set_current = 0.0
 
-    def send_command(self, command: str):
-        """Override send_command to add a delay for Prodigit devices."""
-        super().send_command(command)
-        time.sleep(0.2)
+    def send_command(self, command: str, check_errors: bool = False):
+        """
+        Override send_command to add a delay for Prodigit devices.
+        
+        Note: Prodigit devices don't support SYST:ERR? command, so we skip
+        error checking even if check_errors=True to avoid timeouts.
+        """
+        # Prodigit doesn't support SYST:ERR?, so skip error checking
+        # but still send the command with delay
+        if not self.connected:
+            raise Exception("Device not connected")
+        
+        try:
+            self.interface.write(command)
+        except Exception as e:
+            raise
+        
+        # Delay from manual spec (50ms min between measurement instructions + safety margin)
+        delay = self.device_spec.timing.send_delay_s if self.device_spec.timing else 0.1
+        time.sleep(delay)
+    
+    def query_command(self, command: str, check_errors: bool = False) -> str:
+        """
+        Override query_command to add delays for Prodigit devices.
+        
+        Prodigit devices require delays between commands to avoid response confusion.
+        Using write() + read() instead of query() to have better control over timing.
+        
+        Optimized: Only clear buffer if not already cleared (e.g., by get_measurements()).
+        """
+        if not self.connected:
+            raise Exception("Device not connected")
+        
+        try:
+            # Clear buffer for standalone queries to prevent response mixing
+            # Note: get_measurements() also clears buffer, but standalone queries
+            # (like query_mode(), query_load_status()) need their own clearing
+            try:
+                self.interface.connection.clear()
+            except Exception:
+                pass  # Ignore if clear() fails (e.g., not a VISA connection)
+            
+            # Send command with delay from manual spec
+            self.interface.write(command)
+            write_delay = self.device_spec.timing.query_write_delay_s if self.device_spec.timing else 0.08
+            time.sleep(write_delay)
+
+            # Read response
+            response = self.interface.read()
+            read_delay = self.device_spec.timing.query_read_delay_s if self.device_spec.timing else 0.03
+            time.sleep(read_delay)
+            
+            return response.strip()
+        except Exception as e:
+            # Check if it's a timeout exception
+            error_str = str(e).lower()
+            if 'timeout' in error_str:
+                self._handle_timeout(f"query_command('{command}')")
+            raise
 
     def _set_mode(self, mode_cmd: str, mode_name: str):
         """Helper to set the device mode."""
@@ -156,19 +209,91 @@ class ProdigitController(BaseDeviceController):
         except (ValueError, TypeError):
             return None
 
+    def get_measurements(self):
+        """
+        Override get_measurements to ensure proper buffer management and data validation.
+        This ensures all three measurements (voltage, current, power) are read atomically
+        with proper buffer clearing to prevent response mixing.
+        
+        Optimized for monitoring: single buffer clear at start, minimal delays.
+        """
+        from datetime import datetime
+        from models.device_config import MeasurementData
+        
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+        
+        # Clear buffer once at the start to prevent mixing
+        try:
+            self.interface.connection.clear()
+        except Exception:
+            pass
+        
+        # Read measurements with proper error handling
+        # Note: Each measure_* method will do its own query_command with delays,
+        # but we've already cleared the buffer once at the start
+        voltage = None
+        current = None
+        power = None
+        
+        try:
+            # Measure voltage
+            voltage = self.measure_voltage()
+        except Exception as e:
+            logger.debug(f"Error measuring voltage: {e}")
+        
+        try:
+            # Measure current
+            current = self.measure_current()
+        except Exception as e:
+            logger.debug(f"Error measuring current: {e}")
+        
+        try:
+            # Measure power
+            power = self.measure_power()
+        except Exception as e:
+            logger.debug(f"Error measuring power: {e}")
+        
+        # Validate data consistency: P should be approximately V * I
+        # Allow 5% tolerance for measurement errors
+        if voltage is not None and current is not None and power is not None:
+            expected_power = voltage * current
+            tolerance = abs(expected_power * 0.05)  # 5% tolerance
+            if abs(power - expected_power) > max(tolerance, 0.1):  # At least 0.1W tolerance
+                # If power doesn't match, recalculate it from V*I
+                logger.warning(
+                    f"Power mismatch detected: measured={power:.2f}W, "
+                    f"expected={expected_power:.2f}W (V={voltage:.2f}V, I={current:.3f}A). "
+                    f"Using calculated power."
+                )
+                power = expected_power
+        
+        return MeasurementData(
+            timestamp=timestamp,
+            voltage=voltage,
+            current=current,
+            power=power
+        )
+
+    # Manual: MODE? returns 0:CC, 1:CR, 2:CV, 3:CP
+    _MODE_MAP = {'0': 'CC', '1': 'CR', '2': 'CV', '3': 'CP'}
+    # Manual: LOAD? returns 0:OFF, 1:ON
+    _LOAD_MAP = {'0': 'OFF', '1': 'ON'}
+
     def query_mode(self) -> Optional[str]:
-        """Query the current operating mode."""
+        """Query the current operating mode. Returns CC/CR/CV/CP."""
         try:
             cmd = self.device_spec.default_commands['query_mode']
-            return self.query_command(cmd)
+            raw = self.query_command(cmd).strip()
+            return self._MODE_MAP.get(raw, raw)
         except Exception:
             return None
 
     def query_load_status(self) -> Optional[str]:
-        """Query the load status (ON/OFF)."""
+        """Query the load status. Returns ON/OFF."""
         try:
             cmd = self.device_spec.default_commands['query_load']
-            return self.query_command(cmd)
+            raw = self.query_command(cmd).strip()
+            return self._LOAD_MAP.get(raw, raw)
         except Exception:
             return None
 
@@ -188,12 +313,20 @@ class ProdigitController(BaseDeviceController):
         """Wrapper for load_off to match base controller expectations."""
         self.load_off()
 
-    def load_current_profile(self, csv_path: str) -> Optional[pd.DataFrame]:
+    def load_current_profile(self, csv_path: str):
         """
         Load and validate a current profile from CSV or Excel file for CC operation.
         Supports: .csv, .xlsx
         Expected columns: time_s, current_a
+
+        Returns:
+            pandas.DataFrame or None
         """
+        try:
+            import pandas as pd
+        except ImportError:
+            raise ImportError("pandas paketi gerekli: pip install pandas")
+
         # Clear cache at start - will be repopulated if successful
         self._clear_profile_cache()
 
@@ -204,7 +337,7 @@ class ProdigitController(BaseDeviceController):
 
         try:
             start_time = time.time()
-            
+
             # Read file based on extension (optimized)
             if str(path).endswith('.xlsx') or str(path).endswith('.xls'):
                 try:

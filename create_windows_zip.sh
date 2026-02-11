@@ -36,6 +36,7 @@ tar -czf lab_instruments_windows.tar.gz \
     --exclude='lab_instruments/docs/manuals/*.pdf' \
     --exclude='lab_instruments/.claude' \
     --exclude='lab_instruments/create_windows_zip.sh' \
+    --exclude='lab_instruments/gui/examples/*.xlsx' \
     --exclude='*.pyc' \
     --exclude='.DS_Store' \
     --exclude='Thumbs.db' \
@@ -89,6 +90,20 @@ if [ $? -eq 0 ]; then
         echo "  ✓ gui/requirements.txt"
     else
         echo "  ✗ gui/requirements.txt (MISSING!)"
+    fi
+    
+    tar -tzf lab_instruments_windows.tar.gz | grep -q "lab_instruments/gui/controllers/keithley/tests/profile_runner.py"
+    if [ $? -eq 0 ]; then
+        echo "  ✓ gui/controllers/keithley/tests/ (modular structure)"
+    else
+        echo "  ✗ gui/controllers/keithley/tests/ (MISSING!)"
+    fi
+    
+    tar -tzf lab_instruments_windows.tar.gz | grep -q "lab_instruments/README.md"
+    if [ $? -eq 0 ]; then
+        echo "  ✓ README.md"
+    else
+        echo "  ✗ README.md (MISSING!)"
     fi
     
     echo ""

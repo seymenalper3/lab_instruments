@@ -39,7 +39,12 @@ lab_instruments/
    ```bash
    source myenv/bin/activate
    ```
-3. Gerekli paketleri yükleyin (GUI klasöründe requirements.txt mevcut)
+3. Gerekli paketleri yükleyin:
+   ```bash
+   cd gui
+   pip install -r requirements.txt
+   ```
+   **Not:** Excel desteği için `pandas` ve `openpyxl` otomatik yüklenir.
 
 ---
 
@@ -96,8 +101,8 @@ lab_instruments/
    ```cmd
    cd gui
    pip install -r requirements.txt
-   pip install PyQt5
    ```
+   **Not:** `requirements.txt` içinde `pandas` ve `openpyxl` (Excel desteği) zaten mevcuttur.
 
 ### 5️⃣ Cihaz Bağlantısı Test
 
@@ -139,9 +144,10 @@ lab_instruments/
    - `Serial`: COM port seçin (örn: `COM3`)
 
 #### Adım 2: Cihaz Keşfi
-1. **"Scan Devices" butonuna tıklayın**
+1. **USB/GPIB için:** "Detect" butonuna tıklayın
 2. **Bulunan cihazlar listede görünecek**
-3. **İstediğiniz cihazı seçin**
+3. **İstediğiniz cihazı seçin:**
+   - **Çift tıklayarak** veya **"Confirm" butonuna basarak** seçimi onaylayın
 4. **"Connect" butonuna tıklayın**
 
 ✅ **Bağlantı başarılı olursa:** Durum ışığı yeşil olacak
@@ -149,27 +155,40 @@ lab_instruments/
 
 ### 🔋 Keithley Sekmesi Kullanımı
 
+#### Yardım ve Bilgi
+- **❓ Help butonu:** Her cihaz sekmesinde detaylı kullanım rehberi için
+- **Browse butonları:** Profil dosyası seçerken format bilgisi gösterilir
+
 #### Battery Test Modu
 1. **"Keithley" sekmesine tıklayın**
-2. **"Battery Test" modunu seçin**
+2. **"Generate Battery Model" butonunu kullanın**
 3. **Test parametrelerini ayarlayın:**
-   - Voltage: `3.0V - 4.2V` arası
-   - Current: `0.1A - 3.0A` arası
-   - Duration: Test süresi (saniye)
-4. **"Start Test" butonuna tıklayın**
+   - Discharge Voltage: `3.0V - 4.2V` arası
+   - Charge Voltage: `4.2V` (tipik)
+   - Current limits: `0.1A - 3.0A` arası
+4. **Output Format seçin:** CSV, Excel veya Her İkisi
+5. **"Generate Battery Model" butonuna tıklayın**
 
 #### Current Profile Modu
 1. **"Current Profile" modunu seçin**
-2. **Profil dosyasını yükleyin** (.csv formatında)
-3. **"Load Profile" → "Apply Profile" → "Start"**
+2. **Profil dosyasını yükleyin:**
+   - **CSV formatı:** `.csv` dosyası (sütunlar: `time_s`, `current_a`)
+   - **Excel formatı:** `.xlsx` veya `.xls` dosyası (aynı sütun yapısı)
+   - **Browse** butonuna tıklayarak dosya seçin
+3. **Output Format seçin:** CSV (Hızlı), Excel, veya Her İkisi
+4. **"Run Current Profile" butonuna tıklayın**
+5. **Log dosyaları** `logs/` klasörüne kaydedilir
 
 #### Pulse Test Modu
-1. **"Pulse Test" modunu seçin**
+1. **"Run Pulse Test" bölümüne gidin**
 2. **Pulse parametrelerini ayarlayın:**
-   - Pulse Width: `1ms - 1000ms`
-   - Pulse Current: `0.1A - 3.0A`
-   - Rest Time: `10ms - 10s`
-3. **"Generate Pulse" butonuna tıklayın**
+   - Number of Pulses: `1 - 100`
+   - Pulse Time: `1s - 3600s`
+   - Rest Time: `1s - 3600s`
+   - Pulse Current: `0.1A - 6.0A`
+   - Rest Current: `0.0001A` (minimal)
+3. **Output Format seçin:** CSV, Excel veya Her İkisi
+4. **"Run Pulse Test" butonuna tıklayın**
 
 ### 📊 Monitoring Sekmesi
 
@@ -192,13 +211,18 @@ lab_instruments/
 
 #### Otomatik Loglama
 - **Tüm testler otomatik olarak loglanır**
-- **Dosya konumu:** `data/` klasörü
-- **Dosya formatı:** `test_YYYYMMDD_HHMMSS.csv`
+- **Dosya konumu:** `logs/` klasörü
+- **Dosya formatı:** 
+  - CSV: `keithley_log_YYYYMMDD_HHMMSS.csv`
+  - Excel: `keithley_log_YYYYMMDD_HHMMSS.xlsx` (eğer Excel formatı seçildiyse)
+- **Output Format:** Her test için CSV, Excel veya Her İkisi seçilebilir
 
-#### Manuel Kaydetme
-1. **Test sonrası "Save Results" butonuna tıklayın**
-2. **Dosya adını ve konumunu seçin**
-3. **Format seçin:** CSV, JSON veya Excel
+#### Manuel Kaydetme (Monitoring & Logging Sekmesi)
+1. **"Monitoring & Logging" sekmesine gidin**
+2. **Ölçümleri başlatın** ve veri toplayın
+3. **"Save Data" butonuna tıklayın**
+4. **Format seçin:** CSV, Excel veya Her İkisi
+5. **Dosya adını ve konumunu seçin**
 
 ### 🔧 Ayarlar ve Konfigürasyon
 
@@ -233,10 +257,19 @@ SGX400 serisi cihazlar için test betikleri.
 ## 📊 GUI Uygulaması
 
 `gui/` klasöründe modüler bir GUI uygulaması bulunmaktadır:
-- Cihaz bağlantı yönetimi
-- Real-time monitoring
-- Veri loglama
-- Test sonuçları görüntüleme
+- **Cihaz bağlantı yönetimi** (USB, Ethernet, Serial, GPIB)
+- **Real-time monitoring** ve grafik görüntüleme
+- **Veri loglama** (CSV ve Excel formatları)
+- **Test sonuçları görüntüleme**
+- **Interactive help sistemi** (her cihaz sekmesinde ❓ butonu)
+- **Excel profil dosyası desteği** (input ve output)
+
+#### Yeni Özellikler
+- ✅ **Excel Desteği:** Profil dosyaları ve log çıktıları için `.xlsx` formatı
+- ✅ **Output Format Seçimi:** CSV, Excel veya Her İkisi
+- ✅ **Interactive Help:** Her cihaz sekmesinde detaylı kullanım rehberi
+- ✅ **Geliştirilmiş Connection Widget:** Double-click ile hızlı resource seçimi, scrollbar desteği
+- ✅ **Modüler Kod Yapısı:** Test fonksiyonları ayrı modüllere ayrılmış (scalability)
 
 ### GUI Başlatma
 ```bash
@@ -267,14 +300,16 @@ python apply_current_profile.py
 ## 📋 Veri Yapısı
 
 ### Veri Dosyaları
-- **CSV**: Test sonuçları ve ölçüm verileri
+- **CSV**: Test sonuçları ve ölçüm verileri (`.csv`)
+- **Excel**: Test sonuçları ve ölçüm verileri (`.xlsx`, `.xls`)
 - **JSON**: Konfigürasyon ve metadata
 - **LOG**: Sistem logları ve hata kayıtları
 
 ### Dosya Adlandırma
-- `battery_test_YYYYMMDD_HHMMSS.csv`
-- `current_profile_YYYYMMDD_HHMMSS.log`
-- `pulse_test_YYYYMMDD_HHMMSS.json`
+- **Log dosyaları:** `keithley_log_YYYYMMDD_HHMMSS.csv` / `.xlsx`
+- **Profil dosyaları:** CSV veya Excel formatında (`time_s`, `current_a` sütunları)
+- **Test sonuçları:** `battery_test_YYYYMMDD_HHMMSS.csv`
+- **Pulse testleri:** `pulse_test_YYYYMMDD_HHMMSS.json`
 
 ## 🛠️ Geliştirme
 

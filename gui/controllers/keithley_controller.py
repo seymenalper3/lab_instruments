@@ -7,7 +7,6 @@ import csv
 import time
 import datetime
 import logging
-import pandas as pd
 from pathlib import Path
 from typing import Optional, Tuple, List, Dict, Any
 from controllers.base_controller import BaseDeviceController
@@ -50,14 +49,28 @@ class KeithleyController(BaseDeviceController):
         if voltage < 0 or voltage > self.device_spec.max_voltage:
             raise ValueError(f"Voltage must be between 0 and {self.device_spec.max_voltage}V")
         
-        # Check power limit if we have current value
-        if self._last_current is not None and self.device_spec.max_power:
-            power = voltage * self._last_current
-            if power > self.device_spec.max_power:
-                raise ValueError(
-                    f"Power limit exceeded: {power:.1f}W > {self.device_spec.max_power}W. "
-                    f"Reduce voltage ({voltage}V) or current ({self._last_current}A)."
-                )
+        # Check power limit using actual device current
+        if self.device_spec.max_power:
+            # Try to get actual current from device for accurate power calculation
+            try:
+                actual_current = self.measure_current()
+                if actual_current is not None:
+                    power = voltage * actual_current
+                    if power > self.device_spec.max_power:
+                        raise ValueError(
+                            f"Power limit exceeded: {power:.1f}W > {self.device_spec.max_power}W. "
+                            f"Reduce voltage ({voltage}V) or current ({actual_current:.3f}A)."
+                        )
+            except Exception as e:
+                # If measurement fails, use cached value as fallback
+                if self._last_current is not None:
+                    power = voltage * self._last_current
+                    if power > self.device_spec.max_power:
+                        print(f"Warning: Using cached current value for power check (measurement failed: {e})")
+                        raise ValueError(
+                            f"Power limit exceeded: {power:.1f}W > {self.device_spec.max_power}W (using cached current). "
+                            f"Reduce voltage ({voltage}V) or current ({self._last_current}A)."
+                        )
         
         # Use different commands based on current mode
         if self.current_mode == 'test':
@@ -79,14 +92,28 @@ class KeithleyController(BaseDeviceController):
         if current < 0 or current > self.device_spec.max_current:
             raise ValueError(f"Current must be between 0 and {self.device_spec.max_current}A")
 
-        # Check power limit if we have voltage value
-        if self._last_voltage is not None and self.device_spec.max_power:
-            power = self._last_voltage * current
-            if power > self.device_spec.max_power:
-                raise ValueError(
-                    f"Power limit exceeded: {power:.1f}W > {self.device_spec.max_power}W. "
-                    f"Reduce voltage ({self._last_voltage}V) or current ({current}A)."
-                )
+        # Check power limit using actual device voltage
+        if self.device_spec.max_power:
+            # Try to get actual voltage from device for accurate power calculation
+            try:
+                actual_voltage = self.measure_voltage()
+                if actual_voltage is not None:
+                    power = actual_voltage * current
+                    if power > self.device_spec.max_power:
+                        raise ValueError(
+                            f"Power limit exceeded: {power:.1f}W > {self.device_spec.max_power}W. "
+                            f"Reduce voltage ({actual_voltage:.3f}V) or current ({current}A)."
+                        )
+            except Exception as e:
+                # If measurement fails, use cached value as fallback
+                if self._last_voltage is not None:
+                    power = self._last_voltage * current
+                    if power > self.device_spec.max_power:
+                        print(f"Warning: Using cached voltage value for power check (measurement failed: {e})")
+                        raise ValueError(
+                            f"Power limit exceeded: {power:.1f}W > {self.device_spec.max_power}W (using cached voltage). "
+                            f"Reduce voltage ({self._last_voltage}V) or current ({current}A)."
+                        )
 
         # Use different commands based on current mode
         if self.current_mode == 'test':
@@ -164,8 +191,8 @@ class KeithleyController(BaseDeviceController):
                         print("Power Supply output verified OFF")
                     else:
                         print(f"Warning: Power Supply output may still be ON (state: {output_state})")
-                except:
-                    print("Warning: Could not verify Power Supply output state")
+                except Exception as e:
+                    print(f"Warning: Could not verify Power Supply output state: {e}")
             except Exception as e:
                 print(f"Warning: Failed to turn off Power Supply output: {e}")
             
@@ -181,8 +208,8 @@ class KeithleyController(BaseDeviceController):
                         print("Battery output verified OFF")
                     else:
                         print(f"Warning: Battery output may still be ON (state: {battery_output_state})")
-                except:
-                    print("Warning: Could not verify Battery output state")
+                except Exception as e:
+                    print(f"Warning: Could not verify Battery output state: {e}")
             except Exception as e:
                 print(f"Warning: Failed to turn off Battery output: {e}")
             
@@ -217,14 +244,17 @@ class KeithleyController(BaseDeviceController):
                     if attempt < 2:
                         time.sleep(1)
             
-            # If verification failed but we sent the command, assume it worked
-            self.current_mode = 'power'
-            print("Mode switch command sent, assuming success")
-            return True
-            
+            # If verification failed after all retries, raise an error
+            error_msg = "Failed to verify Power Supply mode switch after 3 attempts"
+            print(f"ERROR: {error_msg}")
+            raise RuntimeError(error_msg)
+
+        except RuntimeError:
+            # Re-raise runtime errors from verification failure
+            raise
         except Exception as e:
             print(f"Failed to switch to Power Supply mode: {e}")
-            return False
+            raise RuntimeError(f"Mode switch failed: {e}")
 
     def switch_to_battery_test_mode(self) -> bool:
         """
@@ -249,8 +279,8 @@ class KeithleyController(BaseDeviceController):
                         print("Power Supply output verified OFF")
                     else:
                         print(f"Warning: Power Supply output may still be ON (state: {output_state})")
-                except:
-                    print("Warning: Could not verify Power Supply output state")
+                except Exception as e:
+                    print(f"Warning: Could not verify Power Supply output state: {e}")
             except Exception as e:
                 print(f"Warning: Failed to turn off Power Supply output: {e}")
             
@@ -266,8 +296,8 @@ class KeithleyController(BaseDeviceController):
                         print("Battery output verified OFF")
                     else:
                         print(f"Warning: Battery output may still be ON (state: {battery_output_state})")
-                except:
-                    print("Warning: Could not verify Battery output state")
+                except Exception as e:
+                    print(f"Warning: Could not verify Battery output state: {e}")
             except Exception as e:
                 print(f"Warning: Failed to turn off Battery output: {e}")
             
@@ -309,14 +339,17 @@ class KeithleyController(BaseDeviceController):
                     if attempt < 2:
                         time.sleep(1)
             
-            # If verification failed but we sent the command, assume it worked
-            self.current_mode = 'test'
-            print("Mode switch command sent, assuming success")
-            return True
-            
+            # If verification failed after all retries, raise an error
+            error_msg = "Failed to verify Battery Test mode switch after 3 attempts"
+            print(f"ERROR: {error_msg}")
+            raise RuntimeError(error_msg)
+
+        except RuntimeError:
+            # Re-raise runtime errors from verification failure
+            raise
         except Exception as e:
             print(f"Failed to switch to Battery Test mode: {e}")
-            return False
+            raise RuntimeError(f"Mode switch failed: {e}")
     
     def connect_and_prep(self) -> bool:
         """
@@ -358,7 +391,7 @@ class KeithleyController(BaseDeviceController):
             cmd = self.device_spec.default_commands['measure_voltage']
             response = self.query_command(cmd)
             return float(response)
-        except:
+        except Exception:
             return None
         
     def measure_current(self) -> Optional[float]:
@@ -367,7 +400,7 @@ class KeithleyController(BaseDeviceController):
             cmd = self.device_spec.default_commands['measure_current']
             response = self.query_command(cmd)
             return float(response)
-        except:
+        except Exception:
             return None
     
     def measure_voltage_current_combined(self) -> Tuple[Optional[float], Optional[float]]:
@@ -404,7 +437,7 @@ class KeithleyController(BaseDeviceController):
                 voltage = self.measure_voltage()
                 current = self.measure_current()
                 return voltage, current
-            except:
+            except Exception:
                 return None, None
     
     def measure_battery_data_buffer(self) -> Tuple[Optional[float], Optional[float], Optional[float]]:
@@ -413,6 +446,7 @@ class KeithleyController(BaseDeviceController):
         Based on reference script pattern
         Returns (voltage, current, rel_time) tuple
         """
+        is_ethernet = False
         try:
             # Store original timeout - handle both socket and VISA connections
             is_ethernet = self.is_ethernet_connection()
@@ -438,16 +472,18 @@ class KeithleyController(BaseDeviceController):
                     self.interface.connection.timeout = original_timeout
                 return vals[0], vals[1], vals[2]
             
-            # If buffer fails, try direct measurement with retries
-            for retry in range(5):  # More retries
+            # If buffer fails, try MEAS commands (work in Battery Test mode)
+            # In Battery Test mode, :BATT:VOLT? doesn't work, use :MEAS:VOLT? instead
+            for retry in range(3):  # Fewer retries for MEAS commands
                 try:
                     if is_ethernet:
                         time.sleep(0.2)  # Longer delay for ethernet
                     
-                    volt_response = self.query_command(self.device_spec.default_commands['measure_voltage'])
+                    # Use MEAS commands which work in Battery Test mode
+                    volt_response = self.query_command(':MEAS:VOLT?')
                     if is_ethernet:
                         time.sleep(0.1)  # Additional delay between commands
-                    curr_response = self.query_command(self.device_spec.default_commands['measure_current'])
+                    curr_response = self.query_command(':MEAS:CURR?')
                     
                     if volt_response and curr_response:
                         try:
@@ -485,7 +521,7 @@ class KeithleyController(BaseDeviceController):
                     self.interface.connection.settimeout(original_timeout)
                 elif hasattr(self.interface.connection, 'timeout'):
                     self.interface.connection.timeout = original_timeout
-            except:
+            except Exception:
                 pass
             return None, None, None
             
@@ -495,7 +531,7 @@ class KeithleyController(BaseDeviceController):
             voltage, current = self.measure_voltage_current_combined()
             if voltage is not None and current is not None:
                 return voltage * current
-        except:
+        except Exception:
             pass
         return None
     
@@ -590,7 +626,7 @@ class KeithleyController(BaseDeviceController):
                 "Please use a USB connection for this test."
             )
             
-        if self.busy:
+        if self.is_busy():
             raise Exception("Device is busy with another operation")
             
         # Set device as busy for pulse test
@@ -759,10 +795,14 @@ class KeithleyController(BaseDeviceController):
                     return (str(pulse_file), str(rest_file))
                     
             except Exception as e:
-                # Clean up on error - only turn off output
+                # Clean up on error - turn off both outputs for safety
                 try:
-                    self.send_command(':BATT:OUTP OFF')
-                except:
+                    self.send_command(':OUTP OFF')  # Power Supply output
+                except Exception:
+                    pass
+                try:
+                    self.send_command(':BATT:OUTP OFF')  # Battery Test output
+                except Exception:
                     pass
                 raise Exception(f"Pulse test execution failed: {e}")
                 
@@ -770,10 +810,14 @@ class KeithleyController(BaseDeviceController):
             # Always clear busy state
             self.set_busy(False)
             
-            # Clean up device state - only turn off output, keep connection
+            # Clean up device state - turn off both outputs for safety
             try:
-                self.send_command(':BATT:OUTP OFF')
-            except:
+                self.send_command(':OUTP OFF')  # Power Supply output
+            except Exception:
+                pass
+            try:
+                self.send_command(':BATT:OUTP OFF')  # Battery Test output
+            except Exception:
                 pass
                 
     def run_battery_model_test(self,
@@ -781,6 +825,7 @@ class KeithleyController(BaseDeviceController):
                           discharge_current_end: float = 0.4,
                           charge_vfull: float = 4.20,
                           charge_ilimit: float = 1.00,
+                          charge_current_end: float = 0.05,
                           esr_interval: int = 30,
                           model_slot: int = 4,
                           v_min: float = 2.5,
@@ -814,7 +859,7 @@ class KeithleyController(BaseDeviceController):
         if not self.connected:
             raise Exception("Device not connected")
         
-        if self.busy:
+        if self.is_busy():
             raise Exception("Device is busy with another operation")
             
         # Validate parameters
@@ -828,245 +873,45 @@ class KeithleyController(BaseDeviceController):
             raise ValueError(f"Charge current must be between 0.1 and {self.device_spec.max_current}A")
         if model_slot < 1 or model_slot > 9:
             raise ValueError("Model slot must be between 1 and 9")
+        if charge_current_end < 0.01 or charge_current_end > charge_ilimit:
+            raise ValueError(f"Charge end current must be between 0.01A and {charge_ilimit}A (current limit)")
         if esr_interval < 1 or esr_interval > 300:
             raise ValueError("ESR interval must be between 1 and 300 seconds")
             
-        # Set device as busy
-        self.set_busy(True)
-        
-        import time
-        import csv
-        from datetime import datetime
-        from pathlib import Path
-        
-        test_id = datetime.now().strftime("%Y%m%d_%H%M%S")
-        results = {
-            'test_id': test_id,
-            'model_slot': model_slot,
-            'start_time': datetime.now().isoformat(),
-            'model_file': None,
-            'data_file': None,
-            'success': False
-        }
-        
-        try:
-            print(f"Starting battery model generation test {test_id}")
-            
-            # 1) Clear and initialize
-            print("Clearing buffers and initializing...")
-            self.send_command('*CLS')
-            self.send_command(':BATT1:DATA:CLE')
-            self.send_command(':BATT:DATA:CLE')
-            self.send_command(':TRACe:CLEar')
-            
-            # 2) Discharge phase
-            print("=== STARTING BATTERY DISCHARGE ===")
-            print(f"Discharge to {discharge_voltage}V, end current {discharge_current_end}A")
-            
-            self.send_command(':BATT:TEST:MODE DIS')
-            self.send_command(f':BATT:TEST:VOLT {discharge_voltage}')
-            self.send_command(f':BATT:TEST:CURR:END {discharge_current_end}')
-            self.send_command(':BATT:OUTP ON')
-            
-            # Wait for discharge to complete (no timeout - wait until finished)
-            start_time = time.time()
-
-            while True:
-                # Check measurement status
-                try:
-                    cond = int(self.query_command(':STAT:OPER:INST:ISUM:COND?'))
-                    measuring = bool(cond & 0x10)
-
-                    # Try to get voltage/current
-                    try:
-                        voltage = float(self.query_command(':BATT:VOLT?'))
-                        current = float(self.query_command(':BATT:CURR?'))
-                        elapsed = time.time() - start_time
-                        print(f"Discharge progress: {elapsed/60:.1f} min | V: {voltage:.3f}V | I: {current:.3f}A")
-                    except:
-                        pass
-
-                    if not measuring:
-                        print(f"Discharge completed in {(time.time() - start_time)/60:.1f} minutes")
-                        break
-
-                    time.sleep(30)  # Check every 30 seconds
-
-                except Exception as e:
-                    print(f"Status check error: {e}")
-                    time.sleep(5)
-                    
-            self.send_command(':BATT:OUTP OFF')
-            print("=== DISCHARGE COMPLETED ===")
-            
-            # 3) Charge and characterization phase
-            print("=== STARTING CHARGE & CHARACTERIZATION ===")
-            print(f"Charge to {charge_vfull}V, current limit {charge_ilimit}A, ESR interval {esr_interval}s")
-            
-            self.send_command(f':BATT:TEST:SENS:AH:VFUL {charge_vfull}')
-            self.send_command(f':BATT:TEST:SENS:AH:ILIM {charge_ilimit}')
-            self.send_command(f':BATT:TEST:SENS:AH:ESRI S{esr_interval}')
-            self.send_command(':TRACe:CLEar:AUTO ON')
-            self.send_command(':TRACe:FEED:CONT ALW')
-            
-            # Start A-H measurement
-            self.send_command(':BATT:OUTP ON')
-            self.send_command(':BATT:TEST:SENS:AH:EXEC STAR')
-            
-            # Wait for charge to complete (no timeout - wait until finished)
-            start_time = time.time()
-
-            while True:
-                try:
-                    cond = int(self.query_command(':STAT:OPER:INST:ISUM:COND?'))
-                    measuring = bool(cond & 0x10)
-
-                    # Try to get voltage/current
-                    try:
-                        voltage = float(self.query_command(':BATT:VOLT?'))
-                        current = float(self.query_command(':BATT:CURR?'))
-                        elapsed = time.time() - start_time
-                        print(f"Charge progress: {elapsed/60:.1f} min | V: {voltage:.3f}V | I: {current:.3f}A")
-                    except:
-                        pass
-
-                    if not measuring:
-                        print(f"Charge completed in {(time.time() - start_time)/60:.1f} minutes")
-                        break
-
-                    time.sleep(30)  # Check every 30 seconds
-
-                except Exception as e:
-                    print(f"Status check error: {e}")
-                    time.sleep(5)
-                    
-            print("=== CHARGE & CHARACTERIZATION COMPLETED ===")
-            
-            # 4) Generate and save model
-            print("=== GENERATING BATTERY MODEL ===")
-            self.send_command(f':BATT:TEST:SENS:AH:GMOD:RANG {v_min},{v_max}')
-            self.send_command(f':BATT:TEST:SENS:AH:GMOD:SAVE:INT {model_slot}')
-            
-            # Wait for model generation
-            time.sleep(2)
-            self.query_command('*OPC?')  # Wait for operation complete
-            
-            # Verify save
-            slots = self.query_command(':BATT:TEST:SENS:AH:GMOD:CAT?')
-            print(f"Model saved to slot {model_slot}. Available slots: {slots}")
-            
-            # 5) Export model to CSV if requested
-            if export_csv:
-                print("=== EXPORTING MODEL TO CSV ===")
-                
-                # Recall model
-                self.send_command(f':BATT:MOD:RCL {model_slot}')
-                time.sleep(1)
-                
-                # Prepare CSV file
-                data_dir = Path('./battery_models')
-                data_dir.mkdir(exist_ok=True)
-                csv_file = data_dir / f'battery_model_slot{model_slot}_{test_id}.csv'
-                
-                with open(csv_file, 'w', newline='') as f:
-                    writer = csv.writer(f)
-                    writer.writerow(['SOC (%)', 'Voc (V)', 'ESR (Ω)', 'Timestamp'])
-                    
-                    # Read model data (101 points for complete model)
-                    rows_written = 0
-                    for i in range(101):
-                        try:
-                            resp = self.query_command(f':BATT:MOD{model_slot}:ROW{i}?')
-                            if resp and ',' in resp:
-                                parts = resp.strip().split(',')
-                                if len(parts) >= 2:
-                                    voc = float(parts[0])
-                                    esr = float(parts[1])
-                                    soc = i  # 0-100%
-                                    timestamp = datetime.now().isoformat()
-                                    writer.writerow([f'{soc}', f'{voc:.4f}', f'{esr:.4f}', timestamp])
-                                    rows_written += 1
-                        except Exception as e:
-                            print(f"Error reading row {i}: {e}")
-                            
-                print(f"Model exported to: {csv_file} ({rows_written} rows)")
-                results['model_file'] = str(csv_file)
-                
-            # 6) Export measurement data
-            try:
-                print("=== EXPORTING MEASUREMENT DATA ===")
-                points_str = self.query_command(':TRACe:POINts:ACTual?')
-                points = int(points_str) if points_str else 0
-                
-                if points > 0:
-                    print(f"Buffer contains {points} data points")
-                    data_file = data_dir / f'battery_measurements_{test_id}.csv'
-                    
-                    with open(data_file, 'w', newline='') as f:
-                        writer = csv.writer(f)
-                        writer.writerow(['Time (s)', 'Voltage (V)', 'Current (A)', 'Capacity (Ah)', 'ESR (Ω)'])
-                        
-                        # Read data in chunks
-                        chunk_size = 100
-                        total_rows = 0
-                        
-                        for start in range(1, points + 1, chunk_size):
-                            end = min(start + chunk_size - 1, points)
-                            
-                            try:
-                                data = self.query_command(
-                                    f':BATT1:DATA:DATA:SEL? {start},{end},"VOLT,CURR,AH,RES,REL"'
-                                )
-                                
-                                if data:
-                                    rows = [r.split(',') for r in data.split(';') if r]
-                                    for row in rows:
-                                        if len(row) >= 5:
-                                            writer.writerow(row)
-                                            total_rows += 1
-                            except Exception as e:
-                                print(f"Failed to read chunk {start}-{end}: {e}")
-                                
-                    print(f"Measurement data exported to: {data_file} ({total_rows} rows)")
-                    results['data_file'] = str(data_file)
-                    
-            except Exception as e:
-                print(f"Failed to export measurement data: {e}")
-                
-            results['success'] = True
-            results['end_time'] = datetime.now().isoformat()
-            print("=== BATTERY MODEL TEST COMPLETED SUCCESSFULLY ===")
-            
-            return results
-            
-        except Exception as e:
-            print(f"Battery model test failed: {e}")
-            results['error'] = str(e)
-            results['end_time'] = datetime.now().isoformat()
-            raise
-            
-        finally:
-            # Cleanup - only turn off output, keep connection
-            try:
-                self.send_command(':BATT:OUTP OFF')
-            except:
-                pass
-                
-            # Clear busy state
-            self.set_busy(False)
+        # Delegate to modular test runner (replaces old inline implementation)
+        return self._battery_model.run(
+            discharge_voltage=discharge_voltage,
+            discharge_current_end=discharge_current_end,
+            charge_vfull=charge_vfull,
+            charge_ilimit=charge_ilimit,
+            charge_current_end=charge_current_end,
+            esr_interval=esr_interval,
+            model_slot=model_slot,
+            v_min=v_min,
+            v_max=v_max,
+            export_csv=export_csv
+        )
     
-    def load_current_profile(self, csv_path: str) -> Optional[pd.DataFrame]:
+    def load_current_profile(self, csv_path: str):
         """
         Load a current profile from CSV or Excel file and calculate segment durations
         Supports: .csv, .xlsx
+
+        Returns:
+            pandas.DataFrame or None
         """
+        try:
+            import pandas as pd
+        except ImportError:
+            raise ImportError("pandas paketi gerekli: pip install pandas")
+
         print(f"Loading profile from: {csv_path}")
         try:
             # Check if file exists
             if not Path(csv_path).exists():
                 print(f"Profile file not found: {csv_path}")
                 return None
-            
+                
             start_time = time.time()
             
             # Read file based on extension (optimized)
@@ -1095,17 +940,36 @@ class KeithleyController(BaseDeviceController):
             # Sort by time to ensure proper order
             df = df.sort_values('time_s').reset_index(drop=True)
             
+            # Validate monotonic time values
+            if len(df) > 1:
+                time_diffs = df['time_s'].diff()
+                if (time_diffs[1:] < 0).any():
+                    print("Warning: Non-monotonic time values detected after sorting. Check your CSV file.")
+                if (time_diffs[1:] == 0).any():
+                    print("Warning: Duplicate time values detected. This may cause issues.")
+
             # Calculate durations. The time in the CSV is the START time of the segment.
-            df['duration_s'] = df['time_s'].diff().shift(-1)
+            # Duration = next_time - current_time
+            if len(df) > 1:
+                # For all rows except the last: duration = next time - current time
+                df['duration_s'] = df['time_s'].shift(-1) - df['time_s']
             
-            # For the last row, use the duration of the second to last row as an estimate
-            if len(df) > 1 and (pd.isna(df['duration_s'].iloc[-1]) or df['duration_s'].iloc[-1] <= 0):
-                df.loc[df.index[-1], 'duration_s'] = df['duration_s'].iloc[-2] if not pd.isna(df['duration_s'].iloc[-2]) else 10.0
+                # For the last row, use average duration of previous segments as estimate
+                avg_duration = df['duration_s'][:-1].mean()
+                if pd.notna(avg_duration) and avg_duration > 0:
+                    df.loc[df.index[-1], 'duration_s'] = avg_duration
+                    print(f"Last segment duration set to average: {avg_duration:.1f}s")
+                else:
+                    df.loc[df.index[-1], 'duration_s'] = 10.0
+                    print("Last segment duration set to default: 10.0s")
             elif len(df) == 1:
-                df.loc[df.index[-1], 'duration_s'] = 10.0  # Default 10s for single point profile
-            
-            # Ensure all durations are positive
-            df['duration_s'] = df['duration_s'].fillna(10.0)  # Default duration
+                df.loc[df.index[0], 'duration_s'] = 10.0  # Default 10s for single point profile
+                print("Single-point profile: duration set to 10.0s")
+
+            # Validate all durations are positive
+            negative_durations = df[df['duration_s'] <= 0]
+            if len(negative_durations) > 0:
+                print(f"Warning: {len(negative_durations)} negative/zero durations found, setting to 10.0s")
             df.loc[df['duration_s'] <= 0, 'duration_s'] = 10.0
             
             print(f"Profile loaded successfully: {len(df)} segments")
@@ -1184,7 +1048,7 @@ class KeithleyController(BaseDeviceController):
                                                   self.logger.elapsed(), 'OK')
                         else:
                             print(f"    Measurement #{measurement_count + 1} failed: No data received")
-                            
+                        
                     except Exception as e:
                         print(f"    Measurement failed: {e}")
                         self.logger.log_error(step_no, 'charge', str(e))
@@ -1200,10 +1064,15 @@ class KeithleyController(BaseDeviceController):
             print(f"ERROR during charge batch: {e}")
             return False
         finally:
+            # Turn off both outputs for safety
             try:
-                self.send_command(':OUTP OFF')
-                print("Output turned OFF after charge batch")
-            except:
+                self.send_command(':OUTP OFF')  # Power Supply output (primary for charge)
+                print("Power Supply output turned OFF after charge batch")
+            except Exception:
+                pass
+            try:
+                self.send_command(':BATT:OUTP OFF')  # Battery Test output (safety)
+            except Exception:
                 pass
         print("--- Charge batch finished ---")
         return True
@@ -1269,7 +1138,7 @@ class KeithleyController(BaseDeviceController):
                         print(f"    Measurement failed: {e}")
                         self.logger.log_segment(step_no, 'discharge', discharge_current,
                                               None, None, self.logger.elapsed(), f'MEAS_ERROR: {e}')
-                    
+
                     # Sleep for sample period or remaining time, whichever is shorter
                     sleep_time = min(sample_period, duration - elapsed_in_segment)
                     time.sleep(sleep_time)
@@ -1297,9 +1166,15 @@ class KeithleyController(BaseDeviceController):
             print(f"ERROR during discharge batch: {e}")
             return False
         finally:
+            # Turn off both outputs for safety
             try:
-                self.send_command(':BATT:OUTP OFF')
-            except:
+                self.send_command(':BATT:OUTP OFF')  # Battery Test output (primary for discharge)
+                print("Battery Test output turned OFF after discharge batch")
+            except Exception:
+                pass
+            try:
+                self.send_command(':OUTP OFF')  # Power Supply output (safety)
+            except Exception:
                 pass
         print("--- Discharge batch finished ---")
         return True
