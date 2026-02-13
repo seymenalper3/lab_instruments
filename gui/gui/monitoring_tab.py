@@ -708,6 +708,10 @@ Automatic Test Logs (logs/ folder):
                 ax1.set_ylabel('Voltage (V)')
                 ax1.set_title(f'{device_name.title()} - Voltage')
                 ax1.grid(True, alpha=0.3)
+                try:
+                    ax1.ticklabel_format(useOffset=False, style='plain', axis='y')
+                except AttributeError:
+                    pass  # In case of log scale or other issues
             
             # Plot current  
             valid_i = [(t, i) for t, i in zip(relative_times, currents) if i is not None]
@@ -717,6 +721,10 @@ Automatic Test Logs (logs/ folder):
                 ax2.set_ylabel('Current (A)')
                 ax2.set_title(f'{device_name.title()} - Current')
                 ax2.grid(True, alpha=0.3)
+                try:
+                    ax2.ticklabel_format(useOffset=False, style='plain', axis='y')
+                except AttributeError:
+                    pass
             
             # Plot power
             valid_p = [(t, p) for t, p in zip(relative_times, powers) if p is not None]
@@ -726,6 +734,10 @@ Automatic Test Logs (logs/ folder):
                 ax3.set_ylabel('Power (W)')
                 ax3.set_title(f'{device_name.title()} - Power')
                 ax3.grid(True, alpha=0.3)
+                try:
+                    ax3.ticklabel_format(useOffset=False, style='plain', axis='y')
+                except AttributeError:
+                    pass
             
             # Set x-label for bottom row
             if i == num_devices - 1:

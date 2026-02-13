@@ -659,6 +659,10 @@ Manual Operations (Set Parameters, Load ON/OFF):
         self._show_success("Prodigit profile running...", use_statusbar=True, show_popup=False)
         self._set_ui_state(False)
 
+        # Start live measurement display during profile execution
+        self.is_load_on = True
+        self._update_measurements()
+
         def worker():
             try:
                 log_path = self.controller.run_cc_profile(profile_path, sample_period=sample_period, output_format=output_format)
@@ -681,6 +685,7 @@ Manual Operations (Set Parameters, Load ON/OFF):
         """Marshal worker results back to the GUI thread."""
         def _update():
             self.profile_running = False
+            self.is_load_on = False
             self._set_ui_state(True)
             self._update_profile_control_state(enabled=True)
             self.stop_profile_btn.config(state='disabled')

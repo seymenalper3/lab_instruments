@@ -6,10 +6,13 @@ Creates per-second CSV entries with setpoint and measured values.
 from __future__ import annotations
 
 import csv
+import logging
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+
+logger = logging.getLogger(__name__)
 
 
 def _format_number(value: Optional[float], precision: int = 3) -> Optional[str]:
@@ -65,8 +68,6 @@ class ProdigitProfileLogger:
             'elapsed_segment_s': _format_number(elapsed_segment_s, precision=2),
             'elapsed_total_s': _format_number(elapsed_total_s, precision=2),
             'status': status,
-            'profile_path': self.metadata.get('csv_path'),
-            'sample_period_s': _format_number(self.metadata.get('sample_period_s'), precision=2),
         })
 
     def finalize(self, outcome: str, error_message: Optional[str] = None, output_format: str = 'csv') -> list:
@@ -82,29 +83,25 @@ class ProdigitProfileLogger:
             List of saved file paths
         """
         if not self.rows:
-            raise ValueError("No samples recorded for Prodigit CC profile.")
+            logger.warning("No samples recorded for Prodigit CC profile – skipping file save.")
+            return []
 
         summary_row = {
             'timestamp': datetime.now().isoformat(),
             'segment_index': 'SUMMARY',
             'set_current_a': str(self.metadata.get('segment_count')),
-            'measured_voltage_v': None,
+            'measured_voltage_v': error_message if error_message else None,
             'measured_current_a': None,
             'measured_power_w': None,
             'elapsed_segment_s': _format_number(self.metadata.get('total_duration_s'), precision=2),
             'elapsed_total_s': _format_number(self.metadata.get('total_duration_s'), precision=2),
             'status': outcome,
-            'profile_path': self.metadata.get('csv_path'),
-            'sample_period_s': _format_number(self.metadata.get('sample_period_s'), precision=2),
         }
-
-        if error_message:
-            summary_row['measured_voltage_v'] = error_message
 
         log_dir = Path('./logs')
         log_dir.mkdir(exist_ok=True)
         base_filename = self.filename or f"prodigit_cc_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-        
+
         # Remove extension if present
         base_filename = Path(base_filename).stem
 
@@ -118,8 +115,6 @@ class ProdigitProfileLogger:
             'elapsed_segment_s',
             'elapsed_total_s',
             'status',
-            'profile_path',
-            'sample_period_s'
         ]
 
         saved_files = []
@@ -128,6 +123,10 @@ class ProdigitProfileLogger:
         if output_format in ['csv', 'both']:
             csv_filepath = log_dir / f"{base_filename}.csv"
             with open(csv_filepath, 'w', newline='', encoding='utf-8') as csvfile:
+                # Write metadata header as comments
+                csvfile.write(f"# profile: {self.metadata.get('csv_path')}\n")
+                csvfile.write(f"# sample_period_s: {self.metadata.get('sample_period_s')}\n")
+                csvfile.write(f"# started_at: {self.metadata.get('started_at')}\n")
                 writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
                 writer.writeheader()
                 for row in self.rows:

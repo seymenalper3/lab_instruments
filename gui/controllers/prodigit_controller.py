@@ -472,7 +472,11 @@ class ProdigitController(BaseDeviceController):
         try:
             self.set_mode_cc()
             # start with a safe default current, then enable the load
-            self.set_current(0.0)
+            # NOTE: Use send_command directly to bypass busy guard
+            # (set_current() rejects calls when is_busy() is True,
+            #  but we ARE the profile that set the busy flag)
+            set_curr_cmd = self.device_spec.default_commands['set_current']
+            self.send_command(set_curr_cmd.format(0.0))
             self.load_on()
 
             for index, row in profile_df.iterrows():
@@ -483,7 +487,7 @@ class ProdigitController(BaseDeviceController):
                 duration = float(row['duration_s'])
                 segment_elapsed = 0.0
 
-                self.set_current(target_current)
+                self.send_command(set_curr_cmd.format(target_current))
                 measurements = self.get_measurements()
                 profile_logger.log_sample(
                     segment_index=index + 1,
@@ -524,12 +528,18 @@ class ProdigitController(BaseDeviceController):
             return log_path
 
         except InterruptedError as abort_exc:
-            log_paths = profile_logger.finalize(outcome='ABORTED', error_message=str(abort_exc), output_format=output_format)
-            log_path = log_paths[0] if log_paths else None
+            try:
+                log_paths = profile_logger.finalize(outcome='ABORTED', error_message=str(abort_exc), output_format=output_format)
+                log_path = log_paths[0] if log_paths else None
+            except Exception:
+                pass  # Don't mask the abort with a logger error
             raise
         except Exception as exc:
-            log_paths = profile_logger.finalize(outcome='ERROR', error_message=str(exc), output_format=output_format)
-            log_path = log_paths[0] if log_paths else None
+            try:
+                log_paths = profile_logger.finalize(outcome='ERROR', error_message=str(exc), output_format=output_format)
+                log_path = log_paths[0] if log_paths else None
+            except Exception:
+                pass  # Don't mask the original error with a logger error
             raise
         finally:
             # Attempt cleanup with multiple retries
