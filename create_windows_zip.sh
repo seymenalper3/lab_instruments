@@ -43,6 +43,10 @@ tar -czf lab_instruments_windows.tar.gz \
     --exclude='lab_instruments/.vscode' \
     --exclude='lab_instruments/.idea' \
     --exclude='lab_instruments/.cursor' \
+    --exclude='lab_instruments/CODEBASE_AUDIT_REPORT.md' \
+    --exclude='lab_instruments/RISK_ANALYSIS.md' \
+    --exclude='lab_instruments/keithley_battery_model_prompt.md' \
+    --exclude='lab_instruments/gui/CIHAZ_MANUAL_DENETIM_RAPORU.md' \
     lab_instruments
 
 if [ $? -eq 0 ]; then
@@ -117,7 +121,7 @@ if [ $? -eq 0 ]; then
         echo "  ✗ myenv/ NOT excluded!"
     fi
     
-    tar -tzf lab_instruments_windows.tar.gz | grep -q "lab_instruments/build"
+    tar -tzf lab_instruments_windows.tar.gz | grep -q "lab_instruments/build/"
     if [ $? -ne 0 ]; then
         echo "  ✓ build/ excluded"
     else

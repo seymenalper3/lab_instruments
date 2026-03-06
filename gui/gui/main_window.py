@@ -24,7 +24,7 @@ class MainWindow:
     def __init__(self):
         logger.info("Initializing main window...")
 
-        self.root = tk.Tk()
+        self.root = tk.Tk(className='LabInstruments')
         self.root.title("Multi-Device Test Controller (Modular)")
         self.root.geometry("1200x800")
 
@@ -33,6 +33,9 @@ class MainWindow:
 
         # Get app logger for debug console
         self.app_logger = get_app_logger()
+
+        # Set window icon before creating GUI
+        self._setup_window_icon()
 
         # Create GUI
         self.create_gui()
@@ -54,9 +57,38 @@ class MainWindow:
         except Exception:
             # Not running as PyInstaller bundle, use normal path
             base_path = os.path.abspath(".")
-        
+
         return os.path.join(base_path, relative_path)
-        
+
+    def _setup_window_icon(self):
+        """Set window and taskbar icon, with platform-specific handling.
+
+        Windows: iconbitmap() with a .ico file is required for the taskbar —
+                 iconphoto() only affects the title bar on Windows.
+        Linux:   iconphoto() sets _NET_WM_ICON used by the dock/taskbar, but
+                 must fire after the window is mapped (scheduled via after(0)).
+        """
+        try:
+            logo_path = self.get_resource_path('gui/assets/logo.png')
+            ico_path = self.get_resource_path('gui/assets/app_icon.ico')
+
+            if platform.system() == 'Windows' and os.path.exists(ico_path):
+                self.root.iconbitmap(default=ico_path)
+            else:
+                source = Image.open(logo_path).convert('RGB')
+                self._icon_photos = [
+                    ImageTk.PhotoImage(source.resize((size, size), Image.Resampling.LANCZOS))
+                    for size in (128, 64, 32, 16)
+                ]
+                # Set immediately and again after mainloop starts (some WMs
+                # ignore icons set on windows not yet mapped by the compositor)
+                self.root.iconphoto(True, *self._icon_photos)
+                self.root.after(0, lambda: self.root.iconphoto(True, *self._icon_photos))
+
+            logger.debug("Window icon set successfully")
+        except Exception as e:
+            logger.warning(f"Could not set window icon: {e}")
+
     def create_gui(self):
         """Create the main GUI"""
         logger.debug("Creating GUI components...")
@@ -131,12 +163,6 @@ class MainWindow:
                 command=self.emergency_stop_all
             )
             self.emergency_btn.pack(side='right', padx=15, pady=10)
-
-            # Also set as window icon
-            icon_image = Image.open(logo_path)
-            icon_image = icon_image.resize((64, 64), Image.Resampling.LANCZOS)
-            self.icon_photo = ImageTk.PhotoImage(icon_image)
-            self.root.iconphoto(True, self.icon_photo)
 
             logger.debug("Header created successfully")
 
