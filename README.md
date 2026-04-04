@@ -32,6 +32,7 @@ custom Python GUI.
 
 Refactored from a monolithic structure to a modular delegation pattern 
 (Dec 2025). Each test type is an independent, testable module:
+
 gui/
 controllers/
 base_controller.py       # Abstract base (ABC)
