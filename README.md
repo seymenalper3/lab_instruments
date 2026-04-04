@@ -61,7 +61,8 @@ docs/
 ## Screenshots
 
 ### Profile Test Running
-<img width="512" height="493" alt="image" src="https://github.com/user-attachments/assets/54cd367b-7459-4ae0-9003-72b39c7966c0" />
+<img width="512" height="305" alt="image" src="https://github.com/user-attachments/assets/7938a79e-f855-4305-a3fb-7ea65b0a8898" />
+
 <img width="512" height="287" alt="image" src="https://github.com/user-attachments/assets/d6dc8577-445c-4606-97f9-f19cb4099472" />
 
 
