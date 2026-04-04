@@ -1,3 +1,5 @@
+<img width="1600" height="867" alt="image" src="https://github.com/user-attachments/assets/5965a530-67a7-4cd1-af26-339ce8b91a73" />
+
 # Lab Instruments Control System
 
 Python-based control and monitoring suite for laboratory battery test 
