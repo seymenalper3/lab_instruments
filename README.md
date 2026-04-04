@@ -10,7 +10,7 @@ Supports Keithley 2281S, Prodigit 34205A, and Sorensen SGX400-12 —
 replacing ~$1,000 commercial instrument control software with a 
 custom Python GUI.
 
-![Main Interface](docs/screenshots/main_gui.png)
+
 <img width="413" height="512" alt="image" src="https://github.com/user-attachments/assets/8ff9f9c2-8875-4d95-bfa1-a2f32146bc12" />
 
 ---
@@ -66,17 +66,17 @@ docs/
 <img width="512" height="287" alt="image" src="https://github.com/user-attachments/assets/d6dc8577-445c-4606-97f9-f19cb4099472" />
 
 
-![Profile Test Running](docs/screenshots/profile_running.png)
+
 
 ### Real-time Monitoring
 <img width="512" height="493" alt="image" src="https://github.com/user-attachments/assets/fac6346d-a32b-46da-8916-a6d3cc8ba9f5" />
 
-![Monitoring](docs/screenshots/monitoring.png)
+
 
 ### Debug Console
 <img width="512" height="276" alt="image" src="https://github.com/user-attachments/assets/1f6239d5-4d68-48b9-872e-b1c92258c680" />
 
-![Debug Console](docs/screenshots/debug_console.png)
+
 
 ---
 
