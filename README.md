@@ -32,28 +32,28 @@ custom Python GUI.
 
 Refactored from a monolithic structure to a modular delegation pattern 
 (Dec 2025). Each test type is an independent, testable module:
-
+```
 gui/
-controllers/
-base_controller.py       # Abstract base (ABC)
-keithley_controller.py   # Keithley 2281S
-keithley/
-tests/
-pulse_test.py        # KeithleyPulseTest (267 lines)
-battery_model.py     # KeithleyBatteryModel (337 lines)
-profile_runner.py    # KeithleyProfileRunner (220 lines)
-prodigit_controller.py   # Prodigit 34205A
-sorensen_controller.py   # Sorensen SGX400
+  controllers/
+    base_controller.py       # Abstract base (ABC)
+    keithley_controller.py   # Keithley 2281S
+    keithley/
+      tests/
+        pulse_test.py        # KeithleyPulseTest (267 lines)
+        battery_model.py     # KeithleyBatteryModel (337 lines)
+        profile_runner.py    # KeithleyProfileRunner (220 lines)
+    prodigit_controller.py   # Prodigit 34205A
+    sorensen_controller.py   # Sorensen SGX400
 instruments/
-keithley/src/              # Standalone test scripts
-sgx400/
+  keithley/src/              # Standalone test scripts
+  sgx400/
 docs/
-screenshots/               # UI screenshots
-MIMARI.md                  # Architecture & design patterns (30 KB)
-KULLANIM_KILAVUZU.md       # User guide (19 KB)
-GELISTIRICI_REHBERI.md     # Developer guide (28 KB)
-SORUN_GIDERME.md           # Troubleshooting (9 KB)
----
+  screenshots/               # UI screenshots
+  MIMARI.md                  # Architecture & design patterns (30 KB)
+  KULLANIM_KILAVUZU.md       # User guide (19 KB)
+  GELISTIRICI_REHBERI.md     # Developer guide (28 KB)
+  SORUN_GIDERME.md           # Troubleshooting (9 KB)
+```
 
 ## Screenshots
 
