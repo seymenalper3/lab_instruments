@@ -565,6 +565,10 @@ Manual Operations (Set Parameters, Load ON/OFF):
 • Monitor temperature during high-power tests
 • Use appropriate current ratings for cables and connections
 
+• RS232 connection: requires a hardware handshake cable (RTS/CTS).
+  Minimum 5 pins: TX, RX, GND, RTS, CTS.
+  A simple 3-pin TX/RX/GND cable will cause timeouts at 115200 baud.
+
 ═══════════════════════════════════════════════════════════
 
 💡 TIPS
@@ -659,9 +663,10 @@ Manual Operations (Set Parameters, Load ON/OFF):
         self._show_success("Prodigit profile running...", use_statusbar=True, show_popup=False)
         self._set_ui_state(False)
 
-        # Start live measurement display during profile execution
-        self.is_load_on = True
-        self._update_measurements()
+        # Profile worker handles its own measurements; don't start the GUI
+        # poll loop here — it would race with the worker thread on the serial
+        # line. Status is shown via profile_status_var instead.
+        self.is_load_on = False
 
         def worker():
             try:

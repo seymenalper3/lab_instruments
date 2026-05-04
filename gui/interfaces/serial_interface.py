@@ -11,7 +11,7 @@ from interfaces.base_interface import DeviceInterface
 class SerialInterface(DeviceInterface):
     """RS232 Serial communication interface"""
     
-    def __init__(self, port, baudrate=9600, timeout=5, bytesize=8, parity='N', stopbits=1, rtscts=False):
+    def __init__(self, port, baudrate=9600, timeout=5, bytesize=8, parity='N', stopbits=1, rtscts=True):
         super().__init__()
         self.port = port
         self.baudrate = baudrate
@@ -82,7 +82,15 @@ class SerialInterface(DeviceInterface):
         cmd = command.strip() + '\r\n'
         print(f"SERIAL SEND: {command}")
         self.connection.write(cmd.encode())
-        
+
+    def read(self):
+        """Read one line of response from serial port"""
+        if not self.connected:
+            raise Exception("Not connected")
+        response = self.connection.readline().decode().strip()
+        print(f"SERIAL RECV: {response}")
+        return response
+
     def query(self, command):
         """Send command and read response via serial"""
         self.write(command)

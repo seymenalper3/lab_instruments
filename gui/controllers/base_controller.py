@@ -24,6 +24,11 @@ class BaseDeviceController(ABC):
         self.connected = False
         self.busy = False  # Flag to indicate device is busy with special operations
         self._busy_lock = threading.Lock()  # Thread safety for busy flag
+        # Serializes every write/read against the underlying interface so that
+        # concurrent threads (worker + monitoring + GUI poll) cannot interleave
+        # SCPI traffic on a single serial/USB-CDC line. RLock allows the same
+        # thread to re-enter (e.g. _handle_timeout calling load_off mid-query).
+        self._io_lock = threading.RLock()
         
     def connect(self) -> bool:
         """Connect to the device"""
@@ -160,7 +165,21 @@ class BaseDeviceController(ABC):
         return None
     
     def _handle_timeout(self, operation: str):
-        """Handle timeout exception by attempting to turn off outputs for safety"""
+        """Handle timeout exception by attempting to turn off outputs for safety.
+
+        IMPORTANT: when the device is busy with a long-running test (profile
+        run, pulse test, battery model, etc.) we MUST NOT auto-shutdown on a
+        single transient timeout — that would abort the test. The caller still
+        sees the exception and can decide whether to retry. Auto-shutdown is
+        only appropriate for one-shot manual operations.
+        """
+        if self.is_busy():
+            logger.warning(
+                f"Timeout during {operation} while device is busy - "
+                "leaving output untouched and propagating error"
+            )
+            return
+
         logger.warning(f"Timeout occurred during {operation} - attempting safe shutdown")
         try:
             # Check if measurement is in process - don't try to turn off output if it is
@@ -211,22 +230,23 @@ class BaseDeviceController(ABC):
         """
         if not self.connected:
             raise Exception("Device not connected")
-        
-        try:
-            self.interface.write(command)
-        except Exception as e:
-            # Check if it's a timeout exception
-            error_str = str(e).lower()
-            if 'timeout' in error_str or isinstance(e, (TimeoutError, socket.timeout)):
-                self._handle_timeout(f"send_command('{command}')")
-            raise
-        
-        # Optionally check for errors (disabled by default for performance)
-        if check_errors:
-            error = self._check_device_errors()
-            if error:
-                logger.warning(f"Device error after command '{command}': {error}")
-        
+
+        with self._io_lock:
+            try:
+                self.interface.write(command)
+            except Exception as e:
+                # Check if it's a timeout exception
+                error_str = str(e).lower()
+                if 'timeout' in error_str or isinstance(e, (TimeoutError, socket.timeout)):
+                    self._handle_timeout(f"send_command('{command}')")
+                raise
+
+            # Optionally check for errors (disabled by default for performance)
+            if check_errors:
+                error = self._check_device_errors()
+                if error:
+                    logger.warning(f"Device error after command '{command}': {error}")
+
     def query_command(self, command: str, check_errors: bool = False) -> str:
         """Send command and get response
         
@@ -236,20 +256,21 @@ class BaseDeviceController(ABC):
         """
         if not self.connected:
             raise Exception("Device not connected")
-        
-        try:
-            response = self.interface.query(command)
-        except Exception as e:
-            # Check if it's a timeout exception
-            error_str = str(e).lower()
-            if 'timeout' in error_str or isinstance(e, (TimeoutError, socket.timeout)):
-                self._handle_timeout(f"query_command('{command}')")
-            raise
-        
-        # Optionally check for errors (disabled by default for performance)
-        if check_errors:
-            error = self._check_device_errors()
-            if error:
-                logger.warning(f"Device error after query '{command}': {error}")
-        
-        return response
+
+        with self._io_lock:
+            try:
+                response = self.interface.query(command)
+            except Exception as e:
+                # Check if it's a timeout exception
+                error_str = str(e).lower()
+                if 'timeout' in error_str or isinstance(e, (TimeoutError, socket.timeout)):
+                    self._handle_timeout(f"query_command('{command}')")
+                raise
+
+            # Optionally check for errors (disabled by default for performance)
+            if check_errors:
+                error = self._check_device_errors()
+                if error:
+                    logger.warning(f"Device error after query '{command}': {error}")
+
+            return response

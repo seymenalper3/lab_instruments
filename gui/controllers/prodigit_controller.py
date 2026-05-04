@@ -45,15 +45,16 @@ class ProdigitController(BaseDeviceController):
         # but still send the command with delay
         if not self.connected:
             raise Exception("Device not connected")
-        
-        try:
-            self.interface.write(command)
-        except Exception as e:
-            raise
-        
-        # Delay from manual spec (50ms min between measurement instructions + safety margin)
-        delay = self.device_spec.timing.send_delay_s if self.device_spec.timing else 0.1
-        time.sleep(delay)
+
+        with self._io_lock:
+            try:
+                self.interface.write(command)
+            except Exception as e:
+                raise
+
+            # Delay from manual spec (50ms min between measurement instructions + safety margin)
+            delay = self.device_spec.timing.send_delay_s if self.device_spec.timing else 0.1
+            time.sleep(delay)
     
     def query_command(self, command: str, check_errors: bool = False) -> str:
         """
@@ -66,33 +67,26 @@ class ProdigitController(BaseDeviceController):
         """
         if not self.connected:
             raise Exception("Device not connected")
-        
-        try:
-            # Clear buffer for standalone queries to prevent response mixing
-            # Note: get_measurements() also clears buffer, but standalone queries
-            # (like query_mode(), query_load_status()) need their own clearing
-            try:
-                self.interface.connection.clear()
-            except Exception:
-                pass  # Ignore if clear() fails (e.g., not a VISA connection)
-            
-            # Send command with delay from manual spec
-            self.interface.write(command)
-            write_delay = self.device_spec.timing.query_write_delay_s if self.device_spec.timing else 0.08
-            time.sleep(write_delay)
 
-            # Read response
-            response = self.interface.read()
-            read_delay = self.device_spec.timing.query_read_delay_s if self.device_spec.timing else 0.03
-            time.sleep(read_delay)
-            
-            return response.strip()
-        except Exception as e:
-            # Check if it's a timeout exception
-            error_str = str(e).lower()
-            if 'timeout' in error_str:
-                self._handle_timeout(f"query_command('{command}')")
-            raise
+        with self._io_lock:
+            try:
+                # Send command with delay from manual spec (min 50ms per manual)
+                self.interface.write(command)
+                write_delay = self.device_spec.timing.query_write_delay_s if self.device_spec.timing else 0.08
+                time.sleep(write_delay)
+
+                # Read response
+                response = self.interface.read()
+                read_delay = self.device_spec.timing.query_read_delay_s if self.device_spec.timing else 0.03
+                time.sleep(read_delay)
+
+                return response.strip()
+            except Exception as e:
+                # Check if it's a timeout exception
+                error_str = str(e).lower()
+                if 'timeout' in error_str:
+                    self._handle_timeout(f"query_command('{command}')")
+                raise
 
     def _set_mode(self, mode_cmd: str, mode_name: str):
         """Helper to set the device mode."""
@@ -221,37 +215,34 @@ class ProdigitController(BaseDeviceController):
         from models.device_config import MeasurementData
         
         timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
-        
-        # Clear buffer once at the start to prevent mixing
-        try:
-            self.interface.connection.clear()
-        except Exception:
-            pass
-        
-        # Read measurements with proper error handling
-        # Note: Each measure_* method will do its own query_command with delays,
-        # but we've already cleared the buffer once at the start
+
         voltage = None
         current = None
         power = None
-        
-        try:
-            # Measure voltage
-            voltage = self.measure_voltage()
-        except Exception as e:
-            logger.debug(f"Error measuring voltage: {e}")
-        
-        try:
-            # Measure current
-            current = self.measure_current()
-        except Exception as e:
-            logger.debug(f"Error measuring current: {e}")
-        
-        try:
-            # Measure power
-            power = self.measure_power()
-        except Exception as e:
-            logger.debug(f"Error measuring power: {e}")
+
+        # Acquire lock once for the whole V/I/P triplet so the three queries
+        # are atomic from the perspective of other threads, and we only clear
+        # the buffer once (not once per query as before).
+        with self._io_lock:
+            try:
+                self.interface.connection.clear()
+            except Exception:
+                pass
+
+            try:
+                voltage = self.measure_voltage()
+            except Exception as e:
+                logger.debug(f"Error measuring voltage: {e}")
+
+            try:
+                current = self.measure_current()
+            except Exception as e:
+                logger.debug(f"Error measuring current: {e}")
+
+            try:
+                power = self.measure_power()
+            except Exception as e:
+                logger.debug(f"Error measuring power: {e}")
         
         # Validate data consistency: P should be approximately V * I
         # Allow 5% tolerance for measurement errors

@@ -102,7 +102,16 @@ class ConnectionWidget:
             self.baud_combo.set("115200")
         else:
             self.baud_combo.set("9600")
-            
+
+        if self.device_spec.device_type.name == "PRODIGIT_34205A":
+            ttk.Label(
+                self.settings_frame,
+                text="⚠ RS232 requires a hardware handshake cable (RTS/CTS, 5-pin minimum). "
+                     "A simple 3-pin TX/RX/GND cable will cause timeouts.",
+                foreground="orange",
+                wraplength=420
+            ).grid(row=1, column=0, columnspan=4, sticky='w', padx=5, pady=(6, 0))
+
     def _create_ethernet_settings(self):
         """Create ethernet settings"""
         ttk.Label(self.settings_frame, text="IP Address:").grid(row=0, column=0, sticky='w', padx=5)

@@ -37,7 +37,8 @@ class VISAInterface(DeviceInterface):
                 self.connection.data_bits = 8
                 self.connection.parity = constants.Parity.none
                 self.connection.stop_bits = constants.StopBits.one
-                self.connection.flow_control = constants.VI_ASRL_FLOW_NONE
+                # Prodigit manual (section 4-2): hardware RTS/CTS handshaking required
+                self.connection.flow_control = constants.VI_ASRL_FLOW_RTS_CTS
                 self.connection.read_termination = '\r\n'
                 self.connection.write_termination = '\r\n'
             else:
