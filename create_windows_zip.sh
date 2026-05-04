@@ -8,7 +8,7 @@ echo "=========================================="
 echo ""
 
 # Navigate to parent directory
-cd /home/seymen/seymen_projects
+cd /home/seymenalper/seymen_projects
 
 # Remove old archive if exists
 if [ -f "lab_instruments_windows.tar.gz" ]; then
@@ -56,7 +56,7 @@ if [ $? -eq 0 ]; then
     echo "=========================================="
     echo ""
     echo "File: lab_instruments_windows.tar.gz"
-    echo "Location: /home/seymen/seymen_projects/"
+    echo "Location: /home/seymenalper/seymen_projects/"
     
     # Get file size
     SIZE=$(du -h lab_instruments_windows.tar.gz | cut -f1)

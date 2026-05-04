@@ -9,7 +9,8 @@ logs/
 *.log
 
 # Build files
-*.spec
+# lab_instruments.spec is tracked — it's the PyInstaller build definition
+
 
 # Distribution / packaging
 .Python
